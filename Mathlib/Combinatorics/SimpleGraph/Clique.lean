@@ -5,6 +5,7 @@ Authors: Yaël Dillies, Bhavik Mehta
 -/
 module
 
+public import Mathlib.Combinatorics.Enumerative.DoubleCounting
 public import Mathlib.Combinatorics.SimpleGraph.Copy
 public import Mathlib.Combinatorics.SimpleGraph.Operations
 public import Mathlib.Combinatorics.SimpleGraph.Paths
@@ -26,6 +27,9 @@ A clique is a set of vertices that are pairwise adjacent.
 * `SimpleGraph.IsNClique`: Predicate for a set of vertices to be an `n`-clique.
 * `SimpleGraph.cliqueFinset`: Finset of `n`-cliques of a graph.
 * `SimpleGraph.CliqueFree`: Predicate for a graph to have no `n`-cliques.
+* `SimpleGraph.cliqueDegree`: The number of `n`-cliques containing a given vertex.
+* `SimpleGraph.sum_cliqueDegree_eq`: The sum of `n`-clique degrees equals `n` times the number
+  of `n`-cliques (generalized handshaking lemma).
 -/
 
 @[expose] public section
@@ -780,6 +784,35 @@ theorem cliqueFinset_map_of_equiv (e : α ≃ β) (n : ℕ) : (G.map e).cliqueFi
   coe_injective <| by push_cast; exact cliqueSet_map_of_equiv _ _ _
 
 end CliqueFinset
+
+/-! ### Clique degree -/
+
+section CliqueDegree
+
+variable [Fintype α] [DecidableEq α] [DecidableRel G.Adj]
+
+/-- The number of `n`-cliques of `G` containing vertex `v`. -/
+def cliqueDegree (n : ℕ) (v : α) : ℕ :=
+  ((G.cliqueFinset n).filter (v ∈ ·)).card
+
+/-- Generalized handshaking lemma: the sum of `n`-clique degrees equals `n` times the number of
+`n`-cliques. Specializes to `SimpleGraph.sum_degrees_eq_twice_card_edges` at `n = 2`. -/
+theorem sum_cliqueDegree_eq (n : ℕ) :
+    ∑ v : α, G.cliqueDegree n v = n * (G.cliqueFinset n).card := by
+  have lhs_eq :
+      ∑ v : α, G.cliqueDegree n v =
+      ∑ v : α, ((G.cliqueFinset n).bipartiteAbove (fun v K => v ∈ K) v).card := by
+    congr 1
+  have rhs_eq :
+      ∑ K ∈ G.cliqueFinset n, (Finset.univ.bipartiteBelow (fun v K => v ∈ K) K).card =
+      n * (G.cliqueFinset n).card := by
+    simp only [Finset.bipartiteBelow, Finset.filter_mem_eq_inter, Finset.univ_inter]
+    rw [Finset.sum_congr rfl fun K hK => (mem_cliqueFinset_iff.mp hK).card_eq,
+        Finset.sum_const, smul_eq_mul, mul_comm]
+  rw [lhs_eq, ← rhs_eq]
+  exact Finset.sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow
+
+end CliqueDegree
 
 /-! ### Independent Sets -/
 
