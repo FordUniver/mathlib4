@@ -45,6 +45,10 @@ Containment:
 Induced containment:
 * Induced copies of `G` inside `H` are already defined as `G ↪g H`.
 * `SimpleGraph.IsIndContained G H` : `G` is contained as an induced subgraph in `H`.
+* `SimpleGraph.indLabelledCopyCount G H`: Number of induced labelled copies of `H` in `G`, i.e.
+  number of graph embeddings `H ↪g G`.
+* `SimpleGraph.indCopyCount G H`: Number of induced unlabelled copies of `H` in `G`, i.e. number
+  of induced subgraphs of `G` isomorphic to `H`.
 
 ## Notation
 
@@ -55,7 +59,6 @@ The following notation is declared in scope `SimpleGraph`:
 ## TODO
 
 * Relate `⊥ ⊴ H` to there being an independent set in `H`.
-* Count induced copies of a graph inside another.
 * Make `copyCount`/`labelledCopyCount` computable (not necessarily efficiently).
 -/
 
@@ -186,6 +189,19 @@ noncomputable def isoToSubgraph (f : Copy A B) : A ≃g f.toSubgraph.coe :=
   · rintro ⟨e⟩
     refine ⟨⟨H'.hom.comp e.toHom, Subgraph.hom_injective.comp e.injective⟩, ?_⟩
     simp [toSubgraph, Subgraph.map_comp]
+
+/-- The range of `f ↦ f.toCopy.toSubgraph` over embeddings is exactly the induced subgraphs
+isomorphic to `A`. Induced analogue of `Copy.range_toSubgraph`. -/
+lemma range_embeddingToSubgraph :
+    Set.range (fun f : A ↪g B => f.toCopy.toSubgraph) =
+    {B' : B.Subgraph | B'.IsInduced ∧ Nonempty (A ≃g B'.coe)} := by
+  ext G'
+  simp only [Set.mem_range, Set.mem_setOf_eq]
+  constructor
+  · rintro ⟨f, rfl⟩
+    exact ⟨Subgraph.IsInduced.top.map f, ⟨f.toCopy.isoToSubgraph⟩⟩
+  · rintro ⟨hInd, ⟨e⟩⟩
+    exact ⟨hInd.toEmbedding.comp e.toEmbedding, by simp [toSubgraph, Subgraph.map_comp]⟩
 
 lemma toSubgraph_surjOn :
     Set.SurjOn (toSubgraph (A := A)) .univ {B' : B.Subgraph | Nonempty (A ≃g B'.coe)} :=
@@ -411,9 +427,7 @@ protected lemma Iso.isIndContained' (e : G ≃g H) : H ⊴ G := e.symm.isIndCont
 
 protected lemma Subgraph.IsInduced.isIndContained {G' : G.Subgraph} (hG' : G'.IsInduced) :
     G'.coe ⊴ G :=
-  ⟨{ toFun := (↑)
-     inj' := Subtype.coe_injective
-     map_rel_iff' := hG'.adj.symm }⟩
+  ⟨hG'.toEmbedding⟩
 
 @[refl] lemma IsIndContained.refl (G : SimpleGraph V) : G ⊴ G := ⟨Embedding.refl⟩
 lemma IsIndContained.rfl : G ⊴ G := .refl _
@@ -543,9 +557,92 @@ end CopyCount
 
 /-!
 #### Induced copies
+-/
 
-TODO
+section IndLabelledCopyCount
+variable [Fintype V] [Fintype W]
 
+/-- `G.indLabelledCopyCount H` is the number of induced labelled copies of `H` in `G`,
+i.e., the number of graph embeddings from `H` to `G`.
+
+This is the induced analogue of `SimpleGraph.labelledCopyCount`. -/
+noncomputable def indLabelledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
+  classical exact Fintype.card (H ↪g G)
+
+@[simp] lemma indLabelledCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
+    G.indLabelledCopyCount H = 1 := by
+  convert Fintype.card_unique
+  exact { default := RelEmbedding.ofIsEmpty H.Adj G.Adj
+          uniq := fun f => RelEmbedding.ext fun a => isEmptyElim a }
+
+@[simp] lemma indLabelledCopyCount_eq_zero : G.indLabelledCopyCount H = 0 ↔ ¬(H ⊴ G) := by
+  simp [indLabelledCopyCount, Fintype.card_eq_zero_iff, IsIndContained]
+
+@[simp] lemma indLabelledCopyCount_pos : 0 < G.indLabelledCopyCount H ↔ H ⊴ G := by
+  simp [Nat.pos_iff_ne_zero, indLabelledCopyCount_eq_zero]
+
+/-- Every induced labelled copy is a (non-induced) labelled copy. -/
+lemma indLabelledCopyCount_le_labelledCopyCount :
+    G.indLabelledCopyCount H ≤ G.labelledCopyCount H := by
+  classical
+  simp only [indLabelledCopyCount, labelledCopyCount]
+  exact Fintype.card_le_of_injective Embedding.toCopy fun f g h =>
+    RelEmbedding.ext fun w => DFunLike.congr_fun h w
+
+end IndLabelledCopyCount
+
+section IndCopyCount
+variable [Fintype V]
+
+/-- `G.indCopyCount H` is the number of induced unlabelled copies of `H` in `G`,
+i.e., the number of induced subgraphs of `G` isomorphic to `H`.
+
+This is the induced analogue of `SimpleGraph.copyCount`. -/
+noncomputable def indCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
+  classical exact #{G' : G.Subgraph | G'.IsInduced ∧ Nonempty (H ≃g G'.coe)}
+
+lemma indCopyCount_eq_card_image_embeddingToSubgraph
+    [Fintype W] [DecidableEq G.Subgraph] :
+    G.indCopyCount H = #((Finset.univ : Finset (H ↪g G)).image (·.toCopy.toSubgraph)) := by
+  rw [indCopyCount]
+  congr
+  refine Finset.coe_injective ?_
+  simpa using Copy.range_embeddingToSubgraph.symm
+
+@[simp] lemma indCopyCount_pos : 0 < G.indCopyCount H ↔ H ⊴ G := by
+  rw [isIndContained_iff_exists_iso_subgraph]
+  classical
+  simp only [indCopyCount, card_pos, filter_nonempty_iff, mem_univ, true_and]
+  exact ⟨fun ⟨G', hInd, hn⟩ => ⟨G', hn.some, hInd⟩,
+         fun ⟨G', e, hInd⟩ => ⟨G', hInd, ⟨e⟩⟩⟩
+
+@[simp] lemma indCopyCount_eq_zero : G.indCopyCount H = 0 ↔ ¬(H ⊴ G) := by
+  rw [← indCopyCount_pos]; omega
+
+/-- Every induced unlabelled copy corresponds to at least one induced labelled copy. -/
+lemma indCopyCount_le_indLabelledCopyCount [Fintype W] :
+    G.indCopyCount H ≤ G.indLabelledCopyCount H := by
+  classical
+  rw [indCopyCount_eq_card_image_embeddingToSubgraph, indLabelledCopyCount]
+  exact card_image_le
+
+@[simp] lemma indCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
+    G.indCopyCount H = 1 := by
+  cases nonempty_fintype W
+  exact (indCopyCount_le_indLabelledCopyCount.trans_eq <|
+      indLabelledCopyCount_of_isEmpty ..).antisymm <|
+    indCopyCount_pos.2 <| .of_isEmpty
+
+/-- Every induced unlabelled copy is a (non-induced) unlabelled copy. -/
+lemma indCopyCount_le_copyCount : G.indCopyCount H ≤ G.copyCount H := by
+  classical
+  simp only [indCopyCount, copyCount]
+  exact Finset.card_le_card fun G' hG' => by
+    simp only [mem_filter, mem_univ, true_and] at hG' ⊢; exact hG'.2
+
+end IndCopyCount
+
+/-!
 ### Killing a subgraph
 
 An important aspect of graph containment is that we can remove not too many edges from a graph `H`

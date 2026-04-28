@@ -669,6 +669,15 @@ theorem map_sup (f : G →g G') (H₁ H₂ : G.Subgraph) : (H₁ ⊔ H₂).map f
 @[simp] lemma edgeSet_map (f : G →g G') (H : G.Subgraph) :
     (H.map f).edgeSet = Sym2.map f '' H.edgeSet := Sym2.fromRel_relationMap ..
 
+lemma IsInduced.map {H : G.Subgraph} (hH : H.IsInduced) (e : G ↪g G') :
+    (H.map e.toHom).IsInduced := by
+  intro v hv w hw hAdj
+  rw [map_verts] at hv hw
+  obtain ⟨a, ha, rfl⟩ := hv
+  obtain ⟨b, hb, rfl⟩ := hw
+  simp only [map_adj, Relation.map_apply]
+  exact ⟨a, b, hH ha hb (e.map_adj_iff.mp hAdj), rfl, rfl⟩
+
 end map
 
 /-- Graph homomorphisms induce a contravariant function on subgraphs. -/
@@ -746,6 +755,15 @@ theorem hom_injective {x : Subgraph G} : Function.Injective x.hom :=
 
 @[simp] lemma map_hom_top (G' : G.Subgraph) : Subgraph.map G'.hom ⊤ = G' := by
   aesop (add unfold safe Relation.Map, unsafe G'.edge_vert, unsafe Adj.symm)
+
+/-- The canonical embedding of an induced subgraph into the ambient graph.
+Unlike `Subgraph.hom`, this is an embedding rather than a homomorphism, since induced subgraphs
+reflect adjacency. -/
+def IsInduced.toEmbedding {G' : G.Subgraph} (hG' : G'.IsInduced) : G'.coe ↪g G :=
+  { toFun := (↑), inj' := Subtype.coe_injective, map_rel_iff' := hG'.adj.symm }
+
+@[simp] lemma IsInduced.toHom_toEmbedding {G' : G.Subgraph} (hG' : G'.IsInduced) :
+    hG'.toEmbedding.toHom = G'.hom := rfl
 
 /-- There is an induced injective homomorphism of a subgraph of `G` as
 a spanning subgraph into `G`. -/
