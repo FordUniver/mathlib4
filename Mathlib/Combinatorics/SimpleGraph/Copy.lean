@@ -47,6 +47,10 @@ Containment:
 Induced containment:
 * Induced copies of `G` inside `H` are already defined as `G ↪g H`.
 * `SimpleGraph.IsIndContained G H` : `G` is contained as an induced subgraph in `H`.
+* `SimpleGraph.indLabeledCopyCount G H`: Number of induced labeled copies of `H` in `G`, i.e.
+  number of graph embeddings `H ↪g G`.
+* `SimpleGraph.indCopyCount G H`: Number of induced unlabeled copies of `H` in `G`, i.e. number
+  of induced subgraphs of `G` isomorphic to `H`.
 
 ## Notation
 
@@ -590,8 +594,90 @@ end CopyCount
 /-!
 #### Induced copies
 
-TODO
+section IndLabeledCopyCount
+variable [Fintype V] [Fintype W]
 
+/-- `G.indLabeledCopyCount H` is the number of induced labeled copies of `H` in `G`,
+i.e., the number of graph embeddings from `H` to `G`.
+
+This is the induced analogue of `SimpleGraph.labelledCopyCount`. -/
+@[no_expose]
+noncomputable def indLabeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
+  classical exact Fintype.card (H ↪g G)
+
+@[simp] lemma indLabeledCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
+    G.indLabeledCopyCount H = 1 := by
+  convert Fintype.card_unique
+  exact { default := RelEmbedding.ofIsEmpty H.Adj G.Adj
+          uniq := fun f => RelEmbedding.ext fun a => isEmptyElim a }
+
+@[simp] lemma indLabeledCopyCount_eq_zero : G.indLabeledCopyCount H = 0 ↔ ¬ H ⊴ G := by
+  simp [indLabeledCopyCount, Fintype.card_eq_zero_iff, IsIndContained]
+
+@[simp] lemma indLabeledCopyCount_pos : 0 < G.indLabeledCopyCount H ↔ H ⊴ G := by
+  simp [Nat.pos_iff_ne_zero, indLabeledCopyCount_eq_zero]
+
+/-- Every induced labeled copy is a (non-induced) labeled copy. -/
+lemma indLabeledCopyCount_le_labelledCopyCount :
+    G.indLabeledCopyCount H ≤ G.labelledCopyCount H := by
+  classical
+  exact Fintype.card_le_of_injective Embedding.toCopy fun f g h =>
+    RelEmbedding.ext fun w => DFunLike.congr_fun h w
+
+end IndLabeledCopyCount
+
+section IndCopyCount
+variable [Fintype V]
+
+/-- `G.indCopyCount H` is the number of induced unlabeled copies of `H` in `G`,
+i.e., the number of induced subgraphs of `G` isomorphic to `H`.
+
+This is the induced analogue of `SimpleGraph.copyCount`. -/
+@[no_expose] noncomputable def indCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
+  classical exact #{G' : G.Subgraph | G'.IsInduced ∧ Nonempty (H ≃g G'.coe)}
+
+lemma indCopyCount_eq_card_image_embeddingToSubgraph
+    [Fintype W] [DecidableEq G.Subgraph] :
+    G.indCopyCount H = #((Finset.univ : Finset (H ↪g G)).image (·.toCopy.toSubgraph)) := by
+  rw [indCopyCount]
+  congr
+  refine Finset.coe_injective ?_
+  simpa using Copy.range_embeddingToSubgraph.symm
+
+@[simp] lemma indCopyCount_pos : 0 < G.indCopyCount H ↔ H ⊴ G := by
+  rw [isIndContained_iff_exists_iso_subgraph]
+  classical
+  simp only [indCopyCount, card_pos, filter_nonempty_iff, mem_univ, true_and]
+  exact ⟨fun ⟨G', hInd, hn⟩ => ⟨G', hn.some, hInd⟩,
+         fun ⟨G', e, hInd⟩ => ⟨G', hInd, ⟨e⟩⟩⟩
+
+@[simp] lemma indCopyCount_eq_zero : G.indCopyCount H = 0 ↔ ¬ H ⊴ G := by
+  rw [← indCopyCount_pos]; omega
+
+/-- Every induced unlabeled copy corresponds to at least one induced labeled copy. -/
+lemma indCopyCount_le_indLabeledCopyCount [Fintype W] :
+    G.indCopyCount H ≤ G.indLabeledCopyCount H := by
+  classical
+  rw [indCopyCount_eq_card_image_embeddingToSubgraph]
+  exact card_image_le
+
+@[simp] lemma indCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
+    G.indCopyCount H = 1 := by
+  cases nonempty_fintype W
+  exact (indCopyCount_le_indLabeledCopyCount.trans_eq <|
+      indLabeledCopyCount_of_isEmpty ..).antisymm <|
+    indCopyCount_pos.2 <| .of_isEmpty
+
+/-- Every induced unlabeled copy is a (non-induced) unlabeled copy. -/
+lemma indCopyCount_le_copyCount : G.indCopyCount H ≤ G.copyCount H := by
+  classical
+  simp only [indCopyCount, copyCount]
+  exact Finset.card_le_card fun G' hG' => by
+    grind
+
+end IndCopyCount
+
+/-!
 ### Killing a subgraph
 
 An important aspect of graph containment is that we can remove not too many edges from a graph `H`
