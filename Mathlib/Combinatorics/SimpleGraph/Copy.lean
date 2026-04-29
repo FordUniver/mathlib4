@@ -39,7 +39,7 @@ Containment:
   removing an edge from each copy of `H` in `G`.
 * `SimpleGraph.copyCount G H`: Number of copies of `H` in `G`, i.e. number of subgraphs of `G`
   isomorphic to `H`.
-* `SimpleGraph.labelledCopyCount G H`: Number of labelled copies of `H` in `G`, i.e. number of
+* `SimpleGraph.labeledCopyCount G H`: Number of labeled copies of `H` in `G`, i.e. number of
   graph embeddings from `H` to `G`.
 
 Induced containment:
@@ -56,7 +56,7 @@ The following notation is declared in scope `SimpleGraph`:
 
 * Relate `⊥ ⊴ H` to there being an independent set in `H`.
 * Count induced copies of a graph inside another.
-* Make `copyCount`/`labelledCopyCount` computable (not necessarily efficiently).
+* Make `copyCount`/`labeledCopyCount` computable (not necessarily efficiently).
 -/
 
 @[expose] public section
@@ -466,39 +466,51 @@ theorem isIndContained_iff_exists_comap_eq : H ⊴ G ↔ ∃ (f : W ↪ V), G.co
 /-!
 ### Counting the copies
 
-If `G` and `H` are finite graphs, we can count the number of unlabelled and labelled copies of `G`
+If `G` and `H` are finite graphs, we can count the number of unlabeled and labeled copies of `G`
 in `H`.
 
 #### Not necessarily induced copies
 -/
 
-section LabelledCopyCount
+section LabeledCopyCount
 variable [Fintype V] [Fintype W]
 
-/-- `G.labelledCopyCount H` is the number of labelled copies of `H` in `G`, i.e. the number of graph
-embeddings from `H` to `G`. See `SimpleGraph.copyCount` for the number of unlabelled copies. -/
-noncomputable def labelledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
+/-- `G.labeledCopyCount H` is the number of labeled copies of `H` in `G`, i.e. the number of graph
+embeddings from `H` to `G`. See `SimpleGraph.copyCount` for the number of unlabeled copies. -/
+@[no_expose] noncomputable def labeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
   classical exact Fintype.card (Copy H G)
 
-@[simp] lemma labelledCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
-    G.labelledCopyCount H = 1 := by
+@[deprecated labeledCopyCount (since := "2026-04-30")]
+alias labelledCopyCount := labeledCopyCount
+
+@[simp] lemma labeledCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
+    G.labeledCopyCount H = 1 := by
   convert Fintype.card_unique
   exact { default := ⟨default, isEmptyElim⟩, uniq := fun _ ↦ Subsingleton.elim _ _ }
 
-@[simp] lemma labelledCopyCount_eq_zero : G.labelledCopyCount H = 0 ↔ H.Free G := by
-  simp [labelledCopyCount, Fintype.card_eq_zero_iff]
+@[deprecated labeledCopyCount_of_isEmpty (since := "2026-04-30")]
+alias labelledCopyCount_of_isEmpty := labeledCopyCount_of_isEmpty
 
-@[simp] lemma labelledCopyCount_pos : 0 < G.labelledCopyCount H ↔ H ⊑ G := by
-  simp [labelledCopyCount, IsContained, Fintype.card_pos_iff]
+@[simp] lemma labeledCopyCount_eq_zero : G.labeledCopyCount H = 0 ↔ H.Free G := by
+  simp [labeledCopyCount, Fintype.card_eq_zero_iff]
 
-end LabelledCopyCount
+@[deprecated labeledCopyCount_eq_zero (since := "2026-04-30")]
+alias labelledCopyCount_eq_zero := labeledCopyCount_eq_zero
+
+@[simp] lemma labeledCopyCount_pos : 0 < G.labeledCopyCount H ↔ H ⊑ G := by
+  simp [labeledCopyCount, IsContained, Fintype.card_pos_iff]
+
+@[deprecated labeledCopyCount_pos (since := "2026-04-30")]
+alias labelledCopyCount_pos := labeledCopyCount_pos
+
+end LabeledCopyCount
 
 section CopyCount
 variable [Fintype V]
 
-/-- `G.copyCount H` is the number of unlabelled copies of `H` in `G`, i.e. the number of subgraphs
-of `G` isomorphic to `H`. See `SimpleGraph.labelledCopyCount` for the number of labelled copies. -/
-noncomputable def copyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
+/-- `G.copyCount H` is the number of unlabeled copies of `H` in `G`, i.e. the number of subgraphs
+of `G` isomorphic to `H`. See `SimpleGraph.labeledCopyCount` for the number of labeled copies. -/
+@[no_expose] noncomputable def copyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
   classical exact #{G' : G.Subgraph | Nonempty (H ≃g G'.coe)}
 
 lemma copyCount_eq_card_image_copyToSubgraph [Fintype {f : H →g G // Injective f}]
@@ -517,9 +529,12 @@ lemma copyCount_eq_card_image_copyToSubgraph [Fintype {f : H →g G // Injective
   simp [copyCount, -nonempty_subtype, isContained_iff_exists_iso_subgraph, card_pos,
     filter_nonempty_iff]
 
-/-- There's at least as many labelled copies of `H` in `G` than unlabelled ones. -/
-lemma copyCount_le_labelledCopyCount [Fintype W] : G.copyCount H ≤ G.labelledCopyCount H := by
+/-- There's at least as many labeled copies of `H` in `G` than unlabeled ones. -/
+lemma copyCount_le_labeledCopyCount [Fintype W] : G.copyCount H ≤ G.labeledCopyCount H := by
   classical rw [copyCount_eq_card_image_copyToSubgraph]; exact card_image_le
+
+@[deprecated copyCount_le_labeledCopyCount (since := "2026-04-30")]
+alias copyCount_le_labelledCopyCount := copyCount_le_labeledCopyCount
 
 @[simp] lemma copyCount_bot (G : SimpleGraph V) : copyCount G (⊥ : SimpleGraph V) = 1 := by
   classical
@@ -539,7 +554,7 @@ lemma copyCount_le_labelledCopyCount [Fintype W] : G.copyCount H ≤ G.labelledC
 @[simp] lemma copyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
     G.copyCount H = 1 := by
   cases nonempty_fintype W
-  exact (copyCount_le_labelledCopyCount.trans_eq <| labelledCopyCount_of_isEmpty ..).antisymm <|
+  exact (copyCount_le_labeledCopyCount.trans_eq <| labeledCopyCount_of_isEmpty ..).antisymm <|
     copyCount_pos.2 <| .of_isEmpty
 
 end CopyCount
