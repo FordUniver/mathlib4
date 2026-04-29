@@ -669,6 +669,17 @@ theorem map_sup (f : G →g G') (H₁ H₂ : G.Subgraph) : (H₁ ⊔ H₂).map f
 @[simp] lemma edgeSet_map (f : G →g G') (H : G.Subgraph) :
     (H.map f).edgeSet = Sym2.map f '' H.edgeSet := Sym2.fromRel_relationMap ..
 
+protected lemma IsInduced.map {H : G.Subgraph} (hH : H.IsInduced) (e : G ↪g G') :
+    (H.map e.toHom).IsInduced := by
+  rintro _ ⟨a, ha, rfl⟩ _ ⟨b, hb, rfl⟩ hAdj
+  simp only [map_adj, Relation.map_apply]
+  exact ⟨a, b, hH ha hb (e.map_adj_iff.mp hAdj), rfl, rfl⟩
+
+@[simp] protected lemma IsInduced.map_iff (e : G ≃g G') {H : G.Subgraph} :
+    (H.map e.toHom).IsInduced ↔ H.IsInduced :=
+  ⟨fun h => by simpa [← map_comp] using h.map e.symm.toEmbedding,
+   fun h => h.map e.toEmbedding⟩
+
 end map
 
 /-- Graph homomorphisms induce a contravariant function on subgraphs. -/
