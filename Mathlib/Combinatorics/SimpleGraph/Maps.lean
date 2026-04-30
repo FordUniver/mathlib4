@@ -763,14 +763,6 @@ section IsGraphIso
 
 variable {V W : Type*} (G : SimpleGraph V) (H : SimpleGraph W)
 
-private instance instDecidableIff {p q : Prop} [Decidable p] [Decidable q] : Decidable (p ↔ q) :=
-  if hp : p then
-    if hq : q then isTrue ⟨fun _ => hq, fun _ => hp⟩
-    else isFalse fun h => hq (h.mp hp)
-  else
-    if hq : q then isFalse fun h => hp (h.mpr hq)
-    else isTrue ⟨fun h => absurd h hp, fun h => absurd h hq⟩
-
 /-- A bijection `e : V ≃ W` preserves adjacency of `G` and `H` in both directions. -/
 abbrev IsGraphIso (e : V ≃ W) : Prop :=
   ∀ v w : V, G.Adj v w ↔ H.Adj (e v) (e w)
@@ -818,11 +810,8 @@ with `decide`.
 Complexity: O(|V|! × |V|²). -/
 @[implicit_reducible]
 noncomputable def nonemptyDecidable [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
-    [DecidableRel G.Adj] [DecidableRel H.Adj] : Decidable (Nonempty (G ≃g H)) := by
-  rw [nonempty_iff_exists_isGraphIso]
-  haveI : DecidablePred (fun e : V ≃ W => G.IsGraphIso H e) := instDecidableIsGraphIso G H
-  haveI : Fintype (V ≃ W) := inferInstance
-  exact Fintype.decidableExistsFintype
+    [DecidableRel G.Adj] [DecidableRel H.Adj] : Decidable (Nonempty (G ≃g H)) :=
+  decidable_of_iff (∃ e : V ≃ W, G.IsGraphIso H e) (nonempty_iff_exists_isGraphIso G H).symm
 
 end Iso
 
@@ -856,12 +845,9 @@ Introduce a local instance via `letI := SimpleGraph.Embedding.nonemptyDecidable 
 Complexity: O(|W|! / (|W| - |V|)! × |V|²). -/
 @[implicit_reducible]
 noncomputable def nonemptyDecidable [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
-    [DecidableRel G.Adj] [DecidableRel H.Adj] : Decidable (Nonempty (G ↪g H)) := by
-  rw [nonempty_iff_exists_isGraphEmbedding]
-  haveI : DecidablePred (fun f : V ↪ W => G.IsGraphEmbedding H f) :=
-    instDecidableIsGraphEmbedding G H
-  haveI : Fintype (V ↪ W) := inferInstance
-  exact Fintype.decidableExistsFintype
+    [DecidableRel G.Adj] [DecidableRel H.Adj] : Decidable (Nonempty (G ↪g H)) :=
+  decidable_of_iff (∃ f : V ↪ W, G.IsGraphEmbedding H f)
+    (nonempty_iff_exists_isGraphEmbedding G H).symm
 
 end Embedding
 
