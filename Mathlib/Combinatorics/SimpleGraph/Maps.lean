@@ -8,8 +8,7 @@ module
 public import Mathlib.Combinatorics.SimpleGraph.Dart
 public import Mathlib.Data.FunLike.Fintype
 public import Mathlib.Logic.Embedding.Set
-
-import Mathlib.Data.Fintype.Perm
+public import Mathlib.Data.Fintype.Perm
 
 /-!
 # Maps between graphs
@@ -764,13 +763,29 @@ section IsGraphIso
 
 variable {V W : Type*} (G : SimpleGraph V) (H : SimpleGraph W)
 
+private instance instDecidableIff {p q : Prop} [Decidable p] [Decidable q] : Decidable (p ↔ q) :=
+  if hp : p then
+    if hq : q then isTrue ⟨fun _ => hq, fun _ => hp⟩
+    else isFalse fun h => hq (h.mp hp)
+  else
+    if hq : q then isFalse fun h => hp (h.mpr hq)
+    else isTrue ⟨fun h => absurd h hp, fun h => absurd h hq⟩
+
 /-- A bijection `e : V ≃ W` preserves adjacency of `G` and `H` in both directions. -/
 abbrev IsGraphIso (e : V ≃ W) : Prop :=
   ∀ v w : V, G.Adj v w ↔ H.Adj (e v) (e w)
 
+instance instDecidableIsGraphIso [Fintype V] [DecidableRel G.Adj] [DecidableRel H.Adj]
+    (e : V ≃ W) : Decidable (G.IsGraphIso H e) :=
+  Fintype.decidableForallFintype
+
 /-- An injection `f : V ↪ W` preserves adjacency of `G` and `H` in both directions. -/
 abbrev IsGraphEmbedding (f : V ↪ W) : Prop :=
   ∀ v w : V, G.Adj v w ↔ H.Adj (f v) (f w)
+
+instance instDecidableIsGraphEmbedding [Fintype V] [DecidableRel G.Adj] [DecidableRel H.Adj]
+    (f : V ↪ W) : Decidable (G.IsGraphEmbedding H f) :=
+  Fintype.decidableForallFintype
 
 end IsGraphIso
 
@@ -797,14 +812,17 @@ theorem nonempty_iff_exists_isGraphIso :
 over all equivalences `V ≃ W`.
 
 This is not a global `instance` to avoid slowing down instance synthesis for unrelated goals.
-Introduce a local instance via `letI := SimpleGraph.Iso.nonemptyDecidable G H` and use with `decide`.
+Introduce a local instance via `letI := SimpleGraph.Iso.nonemptyDecidable G H` and use
+with `decide`.
 
 Complexity: O(|V|! × |V|²). -/
 @[implicit_reducible]
 noncomputable def nonemptyDecidable [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
-    [DecidableRel G.Adj] [DecidableRel H.Adj] : Decidable (Nonempty (G ≃g H)) :=
-  decidable_of_iff (∃ e : V ≃ W, G.IsGraphIso H e)
-    (nonempty_iff_exists_isGraphIso G H).symm
+    [DecidableRel G.Adj] [DecidableRel H.Adj] : Decidable (Nonempty (G ≃g H)) := by
+  rw [nonempty_iff_exists_isGraphIso]
+  haveI : DecidablePred (fun e : V ≃ W => G.IsGraphIso H e) := instDecidableIsGraphIso G H
+  haveI : Fintype (V ≃ W) := inferInstance
+  exact Fintype.decidableExistsFintype
 
 end Iso
 
@@ -838,9 +856,12 @@ Introduce a local instance via `letI := SimpleGraph.Embedding.nonemptyDecidable 
 Complexity: O(|W|! / (|W| - |V|)! × |V|²). -/
 @[implicit_reducible]
 noncomputable def nonemptyDecidable [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
-    [DecidableRel G.Adj] [DecidableRel H.Adj] : Decidable (Nonempty (G ↪g H)) :=
-  decidable_of_iff (∃ f : V ↪ W, G.IsGraphEmbedding H f)
-    (nonempty_iff_exists_isGraphEmbedding G H).symm
+    [DecidableRel G.Adj] [DecidableRel H.Adj] : Decidable (Nonempty (G ↪g H)) := by
+  rw [nonempty_iff_exists_isGraphEmbedding]
+  haveI : DecidablePred (fun f : V ↪ W => G.IsGraphEmbedding H f) :=
+    instDecidableIsGraphEmbedding G H
+  haveI : Fintype (V ↪ W) := inferInstance
+  exact Fintype.decidableExistsFintype
 
 end Embedding
 
