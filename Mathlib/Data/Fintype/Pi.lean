@@ -151,16 +151,6 @@ noncomputable instance _root_.Function.Embedding.fintype {α β} [Fintype α] [F
     Fintype (α ↪ β) := by
   classical exact Fintype.ofEquiv _ (Equiv.subtypeInjectiveEquivEmbedding α β)
 
-/-- Computable `Fintype` instance for embeddings when `DecidableEq` is available.
-
-This is a computable alternative to `Function.Embedding.fintype`, which is deliberately
-`noncomputable` to avoid instance resolution complexity (see its docstring).
-Install locally with `letI := Function.Embedding.fintypeOfDecidableEq α β`. -/
-@[implicit_reducible]
-def _root_.Function.Embedding.fintypeOfDecidableEq (α β : Type*) [DecidableEq α] [DecidableEq β]
-    [Fintype α] [Fintype β] : Fintype (α ↪ β) :=
-  Fintype.ofEquiv {f : α → β // Function.Injective f} (Equiv.subtypeInjectiveEquivEmbedding α β)
-
 instance RelHom.instFintype {α β} [Fintype α] [Fintype β] [DecidableEq α] {r : α → α → Prop}
     {s : β → β → Prop} [DecidableRel r] [DecidableRel s] : Fintype (r →r s) :=
   Fintype.ofEquiv {f : α → β // ∀ {x y}, r x y → s (f x) (f y)} <| Equiv.mk

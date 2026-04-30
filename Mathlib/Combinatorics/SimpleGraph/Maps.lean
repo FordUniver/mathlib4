@@ -43,9 +43,7 @@ To make use of pre-existing simp lemmas, definitions involving morphisms are
 abbreviations as well.
 
 `Iso.nonemptyDecidable` and `Embedding.nonemptyDecidable` are deliberately not global `instance`s —
-introduce a local instance via `letI :=` when needed. For embeddings, also introduce
-`Function.Embedding.fintypeOfDecidableEq` (from `Mathlib.Data.Fintype.Pi`) to obtain a computable
-`Fintype (V ↪ W)` suitable for `decide`.
+introduce a local instance via `letI :=` when needed.
 -/
 
 @[expose] public section
@@ -833,17 +831,14 @@ theorem nonempty_iff_exists_isGraphEmbedding :
 over all injections `V ↪ W`.
 
 This is not a global `instance` to avoid slowing down instance synthesis for unrelated goals.
-Introduce local instances via `letI :=` and use with `decide`:
-```lean
-letI := Function.Embedding.fintypeOfDecidableEq V W
-letI := SimpleGraph.Embedding.nonemptyDecidable G H
-decide
-```
+Introduce a local instance via `letI := SimpleGraph.Embedding.nonemptyDecidable G H` and use with
+`decide`. `Fintype (V ↪ W)` is synthesized automatically from `[Fintype V] [Fintype W]` via
+`Function.Embedding.fintype`.
 
 Complexity: O(|W|! / (|W| - |V|)! × |V|²). -/
 @[implicit_reducible]
 noncomputable def nonemptyDecidable [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
-    [DecidableRel G.Adj] [DecidableRel H.Adj] [Fintype (V ↪ W)] : Decidable (Nonempty (G ↪g H)) :=
+    [DecidableRel G.Adj] [DecidableRel H.Adj] : Decidable (Nonempty (G ↪g H)) :=
   decidable_of_iff (∃ f : V ↪ W, G.IsGraphEmbedding H f)
     (nonempty_iff_exists_isGraphEmbedding G H).symm
 
