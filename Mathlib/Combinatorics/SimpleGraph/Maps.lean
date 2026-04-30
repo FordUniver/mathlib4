@@ -45,7 +45,7 @@ abbreviations as well.
 `Iso.nonemptyDecidable` and `Embedding.nonemptyDecidable` are deliberately not global `instance`s —
 install them locally with `letI :=` when needed. For embeddings, also install
 `Function.Embedding.fintypeOfDecidableEq` (from `Mathlib.Data.Fintype.Pi`) to obtain a computable
-`Fintype (V ↪ W)` suitable for `native_decide`.
+`Fintype (V ↪ W)` suitable for `decide`.
 -/
 
 @[expose] public section
@@ -841,11 +841,11 @@ namespace Embedding
 over all injections `V ↪ W`.
 
 This is not a global `instance` to avoid slowing down instance synthesis for unrelated goals.
-For use with `native_decide`, also install a computable `Fintype (V ↪ W)`:
+Install locally with a computable `Fintype (V ↪ W)` and use with `decide`:
 ```lean
 letI := Function.Embedding.fintypeOfDecidableEq V W
 letI := SimpleGraph.Embedding.nonemptyDecidable G H
-native_decide
+decide
 ```
 
 Complexity: O(|W|! / (|W| - |V|)! × |V|²). -/
