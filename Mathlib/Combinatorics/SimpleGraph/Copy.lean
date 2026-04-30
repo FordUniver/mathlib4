@@ -488,20 +488,18 @@ alias labelledCopyCount := labeledCopyCount
   convert Fintype.card_unique
   exact { default := ⟨default, isEmptyElim⟩, uniq := fun _ ↦ Subsingleton.elim _ _ }
 
-@[deprecated labeledCopyCount_of_isEmpty (since := "2026-04-30")]
+@[deprecated (since := "2026-04-30")]
 alias labelledCopyCount_of_isEmpty := labeledCopyCount_of_isEmpty
 
 @[simp] lemma labeledCopyCount_eq_zero : G.labeledCopyCount H = 0 ↔ H.Free G := by
   simp [labeledCopyCount, Fintype.card_eq_zero_iff]
 
-@[deprecated labeledCopyCount_eq_zero (since := "2026-04-30")]
-alias labelledCopyCount_eq_zero := labeledCopyCount_eq_zero
+@[deprecated (since := "2026-04-30")] alias labelledCopyCount_eq_zero := labeledCopyCount_eq_zero
 
 @[simp] lemma labeledCopyCount_pos : 0 < G.labeledCopyCount H ↔ H ⊑ G := by
   simp [labeledCopyCount, IsContained, Fintype.card_pos_iff]
 
-@[deprecated labeledCopyCount_pos (since := "2026-04-30")]
-alias labelledCopyCount_pos := labeledCopyCount_pos
+@[deprecated (since := "2026-04-30")] alias labelledCopyCount_pos := labeledCopyCount_pos
 
 end LabeledCopyCount
 
@@ -533,7 +531,7 @@ lemma copyCount_eq_card_image_copyToSubgraph [Fintype {f : H →g G // Injective
 lemma copyCount_le_labeledCopyCount [Fintype W] : G.copyCount H ≤ G.labeledCopyCount H := by
   classical rw [copyCount_eq_card_image_copyToSubgraph]; exact card_image_le
 
-@[deprecated copyCount_le_labeledCopyCount (since := "2026-04-30")]
+@[deprecated (since := "2026-04-30")]
 alias copyCount_le_labelledCopyCount := copyCount_le_labeledCopyCount
 
 @[simp] lemma copyCount_bot (G : SimpleGraph V) : copyCount G (⊥ : SimpleGraph V) = 1 := by
