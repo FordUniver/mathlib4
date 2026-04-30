@@ -6,7 +6,6 @@ Authors: Hunter Monroe, Kyle Miller
 module
 
 public import Mathlib.Combinatorics.SimpleGraph.Dart
-public import Mathlib.Data.Fintype.Perm
 public import Mathlib.Data.FunLike.Fintype
 public import Mathlib.Logic.Embedding.Set
 
@@ -45,9 +44,10 @@ To make use of pre-existing simp lemmas, definitions involving morphisms are
 abbreviations as well.
 
 `Iso.nonemptyDecidable` and `Embedding.nonemptyDecidable` are deliberately not global `instance`s —
-install them locally with `letI :=` when needed. For embeddings, also install
-`Function.Embedding.fintypeOfDecidableEq` (from `Mathlib.Data.Fintype.Pi`) to obtain a computable
-`Fintype (V ↪ W)` suitable for `native_decide`.
+install them locally with `letI :=` when needed. Both require a `Fintype` instance for the
+underlying function type (`V ≃ W` and `V ↪ W` respectively), typically provided by
+`Equiv.instFintype` (from `Mathlib.Data.Fintype.Perm`) and
+`Function.Embedding.fintypeOfDecidableEq` (from `Mathlib.Data.Fintype.Pi`).
 -/
 
 @[expose] public section
@@ -835,9 +835,10 @@ over all equivalences `V ≃ W`.
 
 This is not a global `instance` to avoid slowing down instance synthesis for unrelated goals.
 Install locally with `letI := SimpleGraph.Iso.nonemptyDecidable G H` and use with `decide`.
+`[Fintype (V ≃ W)]` is typically provided by `Equiv.instFintype` from `Mathlib.Data.Fintype.Perm`.
 
 Complexity: O(|V|! × |V|²). -/
-noncomputable def nonemptyDecidable : Decidable (Nonempty (G ≃g H)) :=
+noncomputable def nonemptyDecidable [Fintype (V ≃ W)] : Decidable (Nonempty (G ≃g H)) :=
   decidable_of_iff (∃ e : V ≃ W, G.IsGraphIso H e)
     (nonempty_iff_exists_isGraphIso G H).symm
 

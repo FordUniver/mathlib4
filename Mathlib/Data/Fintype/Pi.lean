@@ -156,6 +156,7 @@ noncomputable instance _root_.Function.Embedding.fintype {α β} [Fintype α] [F
 This is a computable alternative to `Function.Embedding.fintype`, which is deliberately
 `noncomputable` to avoid instance resolution complexity (see its docstring).
 Install locally with `letI := Function.Embedding.fintypeOfDecidableEq α β`. -/
+@[implicit_reducible]
 def _root_.Function.Embedding.fintypeOfDecidableEq (α β : Type*) [DecidableEq α] [DecidableEq β]
     [Fintype α] [Fintype β] : Fintype (α ↪ β) :=
   Fintype.ofEquiv {f : α → β // Function.Injective f} (Equiv.subtypeInjectiveEquivEmbedding α β)
