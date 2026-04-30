@@ -6,6 +6,7 @@ Authors: Hunter Monroe, Kyle Miller
 module
 
 public import Mathlib.Combinatorics.SimpleGraph.Dart
+public import Mathlib.Data.Fintype.Perm
 public import Mathlib.Data.FunLike.Fintype
 public import Mathlib.Logic.Embedding.Set
 
@@ -27,6 +28,12 @@ injective, surjective and bijective, and have corresponding notation.
 * `SimpleGraph.Hom`, `G →g H`: a graph homomorphism from `G` to `H`.
 * `SimpleGraph.Embedding`, `G ↪g H`: a graph embedding of `G` in `H`.
 * `SimpleGraph.Iso`, `G ≃g H`: a graph isomorphism between `G` and `H`.
+* `SimpleGraph.IsGraphIso G H e`: predicate that `e : V ≃ W` preserves adjacency for `G` and `H`.
+* `SimpleGraph.IsGraphEmbedding G H f`: predicate that `f : V ↪ W` preserves adjacency for `G`
+  and `H`.
+* `SimpleGraph.Iso.nonemptyDecidable`: opt-in `Decidable (Nonempty (G ≃g H))` via enumeration.
+* `SimpleGraph.Embedding.nonemptyDecidable`: opt-in `Decidable (Nonempty (G ↪g H))` via
+  enumeration.
 
 Note that a graph embedding is a stronger notion than an injective graph homomorphism,
 since its image is an induced subgraph.
@@ -36,6 +43,11 @@ since its image is an induced subgraph.
 Morphisms of graphs are abbreviations for `RelHom`, `RelEmbedding` and `RelIso`.
 To make use of pre-existing simp lemmas, definitions involving morphisms are
 abbreviations as well.
+
+`Iso.nonemptyDecidable` and `Embedding.nonemptyDecidable` are deliberately not global `instance`s —
+install them locally with `letI :=` when needed. For embeddings, also install
+`Function.Embedding.fintypeOfDecidableEq` (from `Mathlib.Data.Fintype.Pi`) to obtain a computable
+`Fintype (V ↪ W)` suitable for `native_decide`.
 -/
 
 @[expose] public section
@@ -749,5 +761,108 @@ noncomputable def overFinIso (hc : Fintype.card V = n) : G ≃g G.overFin hc := 
   use Fintype.equivFinOfCardEq hc; simp [overFin]
 
 end Finite
+
+/-! ## Decidability of graph isomorphism and embedding -/
+
+section IsGraphIso
+
+variable {V W : Type*} (G : SimpleGraph V) (H : SimpleGraph W)
+
+/-- A bijection `e : V ≃ W` preserves adjacency of `G` and `H` in both directions. -/
+def IsGraphIso (e : V ≃ W) : Prop :=
+  ∀ v w : V, G.Adj v w ↔ H.Adj (e v) (e w)
+
+/-- An injection `f : V ↪ W` preserves adjacency of `G` and `H` in both directions. -/
+def IsGraphEmbedding (f : V ↪ W) : Prop :=
+  ∀ v w : V, G.Adj v w ↔ H.Adj (f v) (f w)
+
+namespace Iso
+
+/-- An equivalence satisfying `IsGraphIso G H` gives a graph isomorphism. -/
+def ofIsGraphIso (e : V ≃ W) (h : G.IsGraphIso H e) : G ≃g H where
+  toEquiv := e
+  map_rel_iff' := (h _ _).symm
+
+/-- Any graph isomorphism satisfies `IsGraphIso`. -/
+theorem toEquiv_isGraphIso (f : G ≃g H) : G.IsGraphIso H f.toEquiv :=
+  fun _ _ => f.map_adj_iff.symm
+
+/-- There exists a graph isomorphism iff some equivalence satisfies `IsGraphIso`. -/
+theorem nonempty_iff_exists_isGraphIso :
+    Nonempty (G ≃g H) ↔ ∃ e : V ≃ W, G.IsGraphIso H e :=
+  ⟨fun ⟨f⟩ => ⟨f.toEquiv, toEquiv_isGraphIso G H f⟩,
+   fun ⟨e, he⟩ => ⟨ofIsGraphIso G H e he⟩⟩
+
+end Iso
+
+namespace Embedding
+
+/-- An injection satisfying `IsGraphEmbedding G H` gives a graph embedding. -/
+def ofIsGraphEmbedding (f : V ↪ W) (h : G.IsGraphEmbedding H f) : G ↪g H where
+  toEmbedding := f
+  map_rel_iff' := (h _ _).symm
+
+/-- Any graph embedding satisfies `IsGraphEmbedding`. -/
+theorem toEmbedding_isGraphEmbedding (f : G ↪g H) : G.IsGraphEmbedding H f.toEmbedding :=
+  fun _ _ => f.map_adj_iff.symm
+
+/-- There exists a graph embedding iff some injection satisfies `IsGraphEmbedding`. -/
+theorem nonempty_iff_exists_isGraphEmbedding :
+    Nonempty (G ↪g H) ↔ ∃ f : V ↪ W, G.IsGraphEmbedding H f :=
+  ⟨fun ⟨f⟩ => ⟨f.toEmbedding, toEmbedding_isGraphEmbedding G H f⟩,
+   fun ⟨f, hf⟩ => ⟨ofIsGraphEmbedding G H f hf⟩⟩
+
+end Embedding
+
+end IsGraphIso
+
+section Decidable
+
+variable {V W : Type*} [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
+variable (G : SimpleGraph V) (H : SimpleGraph W)
+variable [DecidableRel G.Adj] [DecidableRel H.Adj]
+
+instance instDecidableIsGraphIso (e : V ≃ W) : Decidable (G.IsGraphIso H e) :=
+  Fintype.decidableForallFintype
+
+instance instDecidableIsGraphEmbedding (f : V ↪ W) : Decidable (G.IsGraphEmbedding H f) :=
+  Fintype.decidableForallFintype
+
+namespace Iso
+
+/-- Opt-in `Decidable` instance for `Nonempty (G ≃g H)` via brute-force enumeration
+over all equivalences `V ≃ W`.
+
+This is not a global `instance` to avoid slowing down instance synthesis for unrelated goals.
+Install locally with `letI := SimpleGraph.Iso.nonemptyDecidable G H` and use with `decide`.
+
+Complexity: O(|V|! × |V|²). -/
+noncomputable def nonemptyDecidable : Decidable (Nonempty (G ≃g H)) :=
+  decidable_of_iff (∃ e : V ≃ W, G.IsGraphIso H e)
+    (nonempty_iff_exists_isGraphIso G H).symm
+
+end Iso
+
+namespace Embedding
+
+/-- Opt-in `Decidable` instance for `Nonempty (G ↪g H)` via brute-force enumeration
+over all injections `V ↪ W`.
+
+This is not a global `instance` to avoid slowing down instance synthesis for unrelated goals.
+For use with `native_decide`, also install a computable `Fintype (V ↪ W)`:
+```lean
+letI := Function.Embedding.fintypeOfDecidableEq V W
+letI := SimpleGraph.Embedding.nonemptyDecidable G H
+native_decide
+```
+
+Complexity: O(|W|! / (|W| - |V|)! × |V|²). -/
+noncomputable def nonemptyDecidable [Fintype (V ↪ W)] : Decidable (Nonempty (G ↪g H)) :=
+  decidable_of_iff (∃ f : V ↪ W, G.IsGraphEmbedding H f)
+    (nonempty_iff_exists_isGraphEmbedding G H).symm
+
+end Embedding
+
+end Decidable
 
 end SimpleGraph
