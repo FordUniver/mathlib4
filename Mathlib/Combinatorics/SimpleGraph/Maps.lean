@@ -774,7 +774,11 @@ abbrev IsGraphIso (e : V ≃ W) : Prop :=
 abbrev IsGraphEmbedding (f : V ↪ W) : Prop :=
   ∀ v w : V, G.Adj v w ↔ H.Adj (f v) (f w)
 
+end IsGraphIso
+
 namespace Iso
+
+variable {V W : Type*} (G : SimpleGraph V) (H : SimpleGraph W)
 
 /-- An equivalence satisfying `IsGraphIso G H` gives a graph isomorphism. -/
 def ofIsGraphIso (e : V ≃ W) (h : G.IsGraphIso H e) : G ≃g H where
@@ -791,9 +795,30 @@ theorem nonempty_iff_exists_isGraphIso :
   ⟨fun ⟨f⟩ => ⟨f.toEquiv, toEquiv_isGraphIso G H f⟩,
    fun ⟨e, he⟩ => ⟨ofIsGraphIso G H e he⟩⟩
 
+section Decidable
+
+variable [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
+variable [DecidableRel G.Adj] [DecidableRel H.Adj]
+
+/-- Opt-in `Decidable` instance for `Nonempty (G ≃g H)` via brute-force enumeration
+over all equivalences `V ≃ W`.
+
+This is not a global `instance` to avoid slowing down instance synthesis for unrelated goals.
+Introduce a local instance via `letI := SimpleGraph.Iso.nonemptyDecidable G H` and use with `decide`.
+
+Complexity: O(|V|! × |V|²). -/
+@[implicit_reducible]
+noncomputable def nonemptyDecidable : Decidable (Nonempty (G ≃g H)) :=
+  decidable_of_iff (∃ e : V ≃ W, G.IsGraphIso H e)
+    (nonempty_iff_exists_isGraphIso G H).symm
+
+end Decidable
+
 end Iso
 
 namespace Embedding
+
+variable {V W : Type*} (G : SimpleGraph V) (H : SimpleGraph W)
 
 /-- An injection satisfying `IsGraphEmbedding G H` gives a graph embedding. -/
 def ofIsGraphEmbedding (f : V ↪ W) (h : G.IsGraphEmbedding H f) : G ↪g H where
@@ -810,33 +835,10 @@ theorem nonempty_iff_exists_isGraphEmbedding :
   ⟨fun ⟨f⟩ => ⟨f.toEmbedding, toEmbedding_isGraphEmbedding G H f⟩,
    fun ⟨f, hf⟩ => ⟨ofIsGraphEmbedding G H f hf⟩⟩
 
-end Embedding
-
-end IsGraphIso
-
 section Decidable
 
-variable {V W : Type*} [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
-variable (G : SimpleGraph V) (H : SimpleGraph W)
+variable [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
 variable [DecidableRel G.Adj] [DecidableRel H.Adj]
-
-namespace Iso
-
-/-- Opt-in `Decidable` instance for `Nonempty (G ≃g H)` via brute-force enumeration
-over all equivalences `V ≃ W`.
-
-This is not a global `instance` to avoid slowing down instance synthesis for unrelated goals.
-Introduce a local instance via `letI := SimpleGraph.Iso.nonemptyDecidable G H` and use with `decide`.
-
-Complexity: O(|V|! × |V|²). -/
-@[implicit_reducible]
-noncomputable def nonemptyDecidable : Decidable (Nonempty (G ≃g H)) :=
-  decidable_of_iff (∃ e : V ≃ W, G.IsGraphIso H e)
-    (nonempty_iff_exists_isGraphIso G H).symm
-
-end Iso
-
-namespace Embedding
 
 /-- Opt-in `Decidable` instance for `Nonempty (G ↪g H)` via brute-force enumeration
 over all injections `V ↪ W`.
@@ -855,8 +857,8 @@ noncomputable def nonemptyDecidable [Fintype (V ↪ W)] : Decidable (Nonempty (G
   decidable_of_iff (∃ f : V ↪ W, G.IsGraphEmbedding H f)
     (nonempty_iff_exists_isGraphEmbedding G H).symm
 
-end Embedding
-
 end Decidable
+
+end Embedding
 
 end SimpleGraph
