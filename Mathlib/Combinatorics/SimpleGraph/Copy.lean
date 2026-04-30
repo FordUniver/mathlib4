@@ -480,8 +480,7 @@ embeddings from `H` to `G`. See `SimpleGraph.copyCount` for the number of unlabe
 @[no_expose] noncomputable def labeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
   classical exact Fintype.card (Copy H G)
 
-@[deprecated labeledCopyCount (since := "2026-04-30")]
-alias labelledCopyCount := labeledCopyCount
+@[deprecated (since := "2026-04-30")] alias labelledCopyCount := labeledCopyCount
 
 @[simp] lemma labeledCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
     G.labeledCopyCount H = 1 := by
