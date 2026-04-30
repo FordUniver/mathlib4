@@ -477,7 +477,7 @@ variable [Fintype V] [Fintype W]
 
 /-- `G.labeledCopyCount H` is the number of labeled copies of `H` in `G`, i.e. the number of graph
 embeddings from `H` to `G`. See `SimpleGraph.copyCount` for the number of unlabeled copies. -/
-@[no_expose] noncomputable def labeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
+noncomputable def labeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
   classical exact Fintype.card (Copy H G)
 
 @[deprecated (since := "2026-04-30")] alias labelledCopyCount := labeledCopyCount
@@ -507,7 +507,7 @@ variable [Fintype V]
 
 /-- `G.copyCount H` is the number of unlabeled copies of `H` in `G`, i.e. the number of subgraphs
 of `G` isomorphic to `H`. See `SimpleGraph.labeledCopyCount` for the number of labeled copies. -/
-@[no_expose] noncomputable def copyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
+noncomputable def copyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
   classical exact #{G' : G.Subgraph | Nonempty (H ≃g G'.coe)}
 
 lemma copyCount_eq_card_image_copyToSubgraph [Fintype {f : H →g G // Injective f}]
