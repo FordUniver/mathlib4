@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Algebra.Order.Group.Nat
 public import Mathlib.Combinatorics.SimpleGraph.Subgraph
+public import Mathlib.SetTheory.Cardinal.Finite
 
 /-!
 # Containment of graphs
@@ -470,33 +471,31 @@ in `H`.
 -/
 
 section LabelledCopyCount
-variable [Fintype V] [Fintype W]
 
 /-- `G.labelledCopyCount H` is the number of labelled copies of `H` in `G`, i.e. the number of graph
 embeddings from `H` to `G`. See `SimpleGraph.copyCount` for the number of unlabelled copies. -/
-noncomputable def labelledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
-  classical exact Fintype.card (Copy H G)
+noncomputable def labelledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ∞ :=
+  ENat.card (Copy H G)
 
 @[simp] lemma labelledCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
     G.labelledCopyCount H = 1 := by
-  convert Fintype.card_unique
-  exact { default := ⟨default, isEmptyElim⟩, uniq := fun _ ↦ Subsingleton.elim _ _ }
+  rw [labelledCopyCount, ENat.card_eq_one_iff_unique]
+  exact ⟨{ default := ⟨default, isEmptyElim⟩, uniq := fun _ ↦ Subsingleton.elim _ _ }⟩
 
 @[simp] lemma labelledCopyCount_eq_zero : G.labelledCopyCount H = 0 ↔ H.Free G := by
-  simp [labelledCopyCount, Fintype.card_eq_zero_iff]
+  simp [labelledCopyCount, ENat.card_eq_zero_iff_empty, Free, not_nonempty_iff]
 
 @[simp] lemma labelledCopyCount_pos : 0 < G.labelledCopyCount H ↔ H ⊑ G := by
-  simp [labelledCopyCount, IsContained, Fintype.card_pos_iff]
+  simp [labelledCopyCount, ENat.card_pos_iff_nonempty, IsContained]
 
 end LabelledCopyCount
 
 section CopyCount
-variable [Fintype V]
 
 /-- `G.copyCount H` is the number of unlabelled copies of `H` in `G`, i.e. the number of subgraphs
 of `G` isomorphic to `H`. See `SimpleGraph.labelledCopyCount` for the number of labelled copies. -/
-noncomputable def copyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
-  classical exact #{G' : G.Subgraph | Nonempty (H ≃g G'.coe)}
+noncomputable def copyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ∞ :=
+  ENat.card {G' : G.Subgraph // Nonempty (H ≃g G'.coe)}
 
 lemma copyCount_eq_card_image_copyToSubgraph [Fintype {f : H →g G // Injective f}]
     [DecidableEq G.Subgraph] :
@@ -507,12 +506,12 @@ lemma copyCount_eq_card_image_copyToSubgraph [Fintype {f : H →g G // Injective
   simpa [-Copy.range_toSubgraph] using Copy.range_toSubgraph.symm
 
 @[simp] lemma copyCount_eq_zero : G.copyCount H = 0 ↔ H.Free G := by
-  simp [copyCount, Free, -nonempty_subtype, isContained_iff_exists_iso_subgraph,
-    filter_eq_empty_iff]
+  simp [copyCount, ENat.card_eq_zero_iff_empty, isEmpty_subtype, Free, not_nonempty_iff,
+    isContained_iff_exists_iso_subgraph]
 
 @[simp] lemma copyCount_pos : 0 < G.copyCount H ↔ H ⊑ G := by
-  simp [copyCount, -nonempty_subtype, isContained_iff_exists_iso_subgraph, card_pos,
-    filter_nonempty_iff]
+  simp [copyCount, ENat.card_pos_iff_nonempty, nonempty_subtype,
+    isContained_iff_exists_iso_subgraph]
 
 /-- There's at least as many labelled copies of `H` in `G` than unlabelled ones. -/
 lemma copyCount_le_labelledCopyCount [Fintype W] : G.copyCount H ≤ G.labelledCopyCount H := by
