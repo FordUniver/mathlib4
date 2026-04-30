@@ -43,7 +43,7 @@ To make use of pre-existing simp lemmas, definitions involving morphisms are
 abbreviations as well.
 
 `Iso.nonemptyDecidable` and `Embedding.nonemptyDecidable` are deliberately not global `instance`s —
-install them locally with `letI :=` when needed. For embeddings, also install
+introduce a local instance via `letI :=` when needed. For embeddings, also introduce
 `Function.Embedding.fintypeOfDecidableEq` (from `Mathlib.Data.Fintype.Pi`) to obtain a computable
 `Fintype (V ↪ W)` suitable for `decide`.
 -/
@@ -826,9 +826,10 @@ namespace Iso
 over all equivalences `V ≃ W`.
 
 This is not a global `instance` to avoid slowing down instance synthesis for unrelated goals.
-Install locally with `letI := SimpleGraph.Iso.nonemptyDecidable G H` and use with `decide`.
+Introduce a local instance via `letI := SimpleGraph.Iso.nonemptyDecidable G H` and use with `decide`.
 
 Complexity: O(|V|! × |V|²). -/
+@[implicit_reducible]
 noncomputable def nonemptyDecidable : Decidable (Nonempty (G ≃g H)) :=
   decidable_of_iff (∃ e : V ≃ W, G.IsGraphIso H e)
     (nonempty_iff_exists_isGraphIso G H).symm
@@ -841,7 +842,7 @@ namespace Embedding
 over all injections `V ↪ W`.
 
 This is not a global `instance` to avoid slowing down instance synthesis for unrelated goals.
-Install locally with a computable `Fintype (V ↪ W)` and use with `decide`:
+Introduce local instances via `letI :=` and use with `decide`:
 ```lean
 letI := Function.Embedding.fintypeOfDecidableEq V W
 letI := SimpleGraph.Embedding.nonemptyDecidable G H
@@ -849,6 +850,7 @@ decide
 ```
 
 Complexity: O(|W|! / (|W| - |V|)! × |V|²). -/
+@[implicit_reducible]
 noncomputable def nonemptyDecidable [Fintype (V ↪ W)] : Decidable (Nonempty (G ↪g H)) :=
   decidable_of_iff (∃ f : V ↪ W, G.IsGraphEmbedding H f)
     (nonempty_iff_exists_isGraphEmbedding G H).symm
