@@ -29,9 +29,6 @@ injective, surjective and bijective, and have corresponding notation.
 * `SimpleGraph.Hom`, `G →g H`: a graph homomorphism from `G` to `H`.
 * `SimpleGraph.Embedding`, `G ↪g H`: a graph embedding of `G` in `H`.
 * `SimpleGraph.Iso`, `G ≃g H`: a graph isomorphism between `G` and `H`.
-* `SimpleGraph.IsGraphIso G H e`: predicate that `e : V ≃ W` preserves adjacency for `G` and `H`.
-* `SimpleGraph.IsGraphEmbedding G H f`: predicate that `f : V ↪ W` preserves adjacency for `G`
-  and `H`.
 * `SimpleGraph.Iso.nonemptyDecidable`: opt-in `Decidable (Nonempty (G ≃g H))` via enumeration.
 * `SimpleGraph.Embedding.nonemptyDecidable`: opt-in `Decidable (Nonempty (G ↪g H))` via
   enumeration.
@@ -770,11 +767,11 @@ section IsGraphIso
 variable {V W : Type*} (G : SimpleGraph V) (H : SimpleGraph W)
 
 /-- A bijection `e : V ≃ W` preserves adjacency of `G` and `H` in both directions. -/
-def IsGraphIso (e : V ≃ W) : Prop :=
+abbrev IsGraphIso (e : V ≃ W) : Prop :=
   ∀ v w : V, G.Adj v w ↔ H.Adj (e v) (e w)
 
 /-- An injection `f : V ↪ W` preserves adjacency of `G` and `H` in both directions. -/
-def IsGraphEmbedding (f : V ↪ W) : Prop :=
+abbrev IsGraphEmbedding (f : V ↪ W) : Prop :=
   ∀ v w : V, G.Adj v w ↔ H.Adj (f v) (f w)
 
 namespace Iso
@@ -822,12 +819,6 @@ section Decidable
 variable {V W : Type*} [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
 variable (G : SimpleGraph V) (H : SimpleGraph W)
 variable [DecidableRel G.Adj] [DecidableRel H.Adj]
-
-instance instDecidableIsGraphIso (e : V ≃ W) : Decidable (G.IsGraphIso H e) :=
-  Fintype.decidableForallFintype
-
-instance instDecidableIsGraphEmbedding (f : V ↪ W) : Decidable (G.IsGraphEmbedding H f) :=
-  Fintype.decidableForallFintype
 
 namespace Iso
 
