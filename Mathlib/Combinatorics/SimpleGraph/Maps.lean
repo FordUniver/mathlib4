@@ -795,11 +795,6 @@ theorem nonempty_iff_exists_isGraphIso :
   ⟨fun ⟨f⟩ => ⟨f.toEquiv, toEquiv_isGraphIso G H f⟩,
    fun ⟨e, he⟩ => ⟨ofIsGraphIso G H e he⟩⟩
 
-section Decidable
-
-variable [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
-variable [DecidableRel G.Adj] [DecidableRel H.Adj]
-
 /-- Opt-in `Decidable` instance for `Nonempty (G ≃g H)` via brute-force enumeration
 over all equivalences `V ≃ W`.
 
@@ -808,11 +803,10 @@ Introduce a local instance via `letI := SimpleGraph.Iso.nonemptyDecidable G H` a
 
 Complexity: O(|V|! × |V|²). -/
 @[implicit_reducible]
-noncomputable def nonemptyDecidable : Decidable (Nonempty (G ≃g H)) :=
+noncomputable def nonemptyDecidable [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
+    [DecidableRel G.Adj] [DecidableRel H.Adj] : Decidable (Nonempty (G ≃g H)) :=
   decidable_of_iff (∃ e : V ≃ W, G.IsGraphIso H e)
     (nonempty_iff_exists_isGraphIso G H).symm
-
-end Decidable
 
 end Iso
 
@@ -835,11 +829,6 @@ theorem nonempty_iff_exists_isGraphEmbedding :
   ⟨fun ⟨f⟩ => ⟨f.toEmbedding, toEmbedding_isGraphEmbedding G H f⟩,
    fun ⟨f, hf⟩ => ⟨ofIsGraphEmbedding G H f hf⟩⟩
 
-section Decidable
-
-variable [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
-variable [DecidableRel G.Adj] [DecidableRel H.Adj]
-
 /-- Opt-in `Decidable` instance for `Nonempty (G ↪g H)` via brute-force enumeration
 over all injections `V ↪ W`.
 
@@ -853,11 +842,10 @@ decide
 
 Complexity: O(|W|! / (|W| - |V|)! × |V|²). -/
 @[implicit_reducible]
-noncomputable def nonemptyDecidable [Fintype (V ↪ W)] : Decidable (Nonempty (G ↪g H)) :=
+noncomputable def nonemptyDecidable [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
+    [DecidableRel G.Adj] [DecidableRel H.Adj] [Fintype (V ↪ W)] : Decidable (Nonempty (G ↪g H)) :=
   decidable_of_iff (∃ f : V ↪ W, G.IsGraphEmbedding H f)
     (nonempty_iff_exists_isGraphEmbedding G H).symm
-
-end Decidable
 
 end Embedding
 
