@@ -600,8 +600,7 @@ variable [Fintype V] [Fintype W]
 /-- `G.indLabeledCopyCount H` is the number of induced labeled copies of `H` in `G`,
 i.e., the number of graph embeddings from `H` to `G`.
 
-This is the induced analogue of `SimpleGraph.labelledCopyCount`. -/
-@[no_expose]
+This is the induced analogue of `SimpleGraph.labeledCopyCount`. -/
 noncomputable def indLabeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
   classical exact Fintype.card (H ↪g G)
 
@@ -618,8 +617,8 @@ noncomputable def indLabeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : 
   simp [Nat.pos_iff_ne_zero, indLabeledCopyCount_eq_zero]
 
 /-- Every induced labeled copy is a (non-induced) labeled copy. -/
-lemma indLabeledCopyCount_le_labelledCopyCount :
-    G.indLabeledCopyCount H ≤ G.labelledCopyCount H := by
+lemma indLabeledCopyCount_le_labeledCopyCount :
+    G.indLabeledCopyCount H ≤ G.labeledCopyCount H := by
   classical
   exact Fintype.card_le_of_injective Embedding.toCopy fun f g h =>
     RelEmbedding.ext fun w => DFunLike.congr_fun h w
@@ -633,7 +632,7 @@ variable [Fintype V]
 i.e., the number of induced subgraphs of `G` isomorphic to `H`.
 
 This is the induced analogue of `SimpleGraph.copyCount`. -/
-@[no_expose] noncomputable def indCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
+noncomputable def indCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
   classical exact #{G' : G.Subgraph | G'.IsInduced ∧ Nonempty (H ≃g G'.coe)}
 
 lemma indCopyCount_eq_card_image_embeddingToSubgraph
