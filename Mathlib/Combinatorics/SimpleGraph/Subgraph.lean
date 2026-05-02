@@ -879,6 +879,20 @@ lemma adj_iff_of_neighborSet_equiv {v : V} {H : Subgraph G}
 
 end Subgraph
 
+/-- The canonical embedding of an induced subgraph into the ambient graph.
+Unlike `Subgraph.hom`, this is an embedding rather than a homomorphism, since induced subgraphs
+reflect adjacency. -/
+def Embedding.ofIsInduced {G : SimpleGraph V} (G' : G.Subgraph) (hG' : G'.IsInduced) :
+    G'.coe ↪g G where
+  toEmbedding := .subtype _
+  map_rel_iff' := hG'.adj.symm
+
+@[simp] lemma Embedding.toHom_ofIsInduced {G : SimpleGraph V} (G' : G.Subgraph)
+    (hG' : G'.IsInduced) : (Embedding.ofIsInduced G' hG').toHom = G'.hom := rfl
+
+@[simp] lemma Embedding.ofIsInduced_apply {G : SimpleGraph V} (G' : G.Subgraph)
+    (hG' : G'.IsInduced) (v : G'.verts) : Embedding.ofIsInduced G' hG' v = ↑v := rfl
+
 @[simp]
 theorem card_neighborSet_toSubgraph (G H : SimpleGraph V) (h : H ≤ G)
     (v : V) [Fintype ↑((toSubgraph H h).neighborSet v)] [Fintype ↑(H.neighborSet v)] :
