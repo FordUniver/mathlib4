@@ -61,7 +61,6 @@ The following notation is declared in scope `SimpleGraph`:
 ## TODO
 
 * Relate `⊥ ⊴ H` to there being an independent set in `H`.
-* Count induced copies of a graph inside another.
 * Make `copyCount`/`labeledCopyCount` computable (not necessarily efficiently).
 -/
 
