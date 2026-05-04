@@ -7,6 +7,8 @@ module
 
 public import Mathlib.Algebra.Order.Group.Nat
 public import Mathlib.Combinatorics.SimpleGraph.Subgraph
+public import Mathlib.Data.Finite.Card
+public import Mathlib.Data.Set.Finite.Range
 
 /-!
 # Containment of graphs
@@ -45,6 +47,10 @@ Containment:
 Induced containment:
 * Induced copies of `G` inside `H` are already defined as `G ↪g H`.
 * `SimpleGraph.IsIndContained G H` : `G` is contained as an induced subgraph in `H`.
+* `SimpleGraph.indLabeledCopyCount G H`: Number of induced labeled copies of `H` in `G`, i.e.
+  number of graph embeddings `H ↪g G`.
+* `SimpleGraph.indCopyCount G H`: Number of induced unlabeled copies of `H` in `G`, i.e. number
+  of induced subgraphs of `G` isomorphic to `H`.
 
 ## Notation
 
@@ -55,14 +61,12 @@ The following notation is declared in scope `SimpleGraph`:
 ## TODO
 
 * Relate `⊥ ⊴ H` to there being an independent set in `H`.
-* Count induced copies of a graph inside another.
 * Make `copyCount`/`labeledCopyCount` computable (not necessarily efficiently).
 -/
 
 public section
 
 open Finset Function
-open Fintype (card)
 
 namespace SimpleGraph
 variable {V W X α β γ : Type*} {G G₁ G₂ G₃ : SimpleGraph V} {H : SimpleGraph W} {I : SimpleGraph X}
@@ -190,6 +194,21 @@ noncomputable def isoToSubgraph (f : Copy A B) : A ≃g f.toSubgraph.coe :=
     refine ⟨⟨H'.hom.comp e.toHom, Subgraph.hom_injective.comp e.injective⟩, ?_⟩
     simp [toSubgraph, Subgraph.map_comp]
 
+lemma range_embeddingToSubgraph :
+    Set.range (fun f : A ↪g B => f.toCopy.toSubgraph) =
+    {B' : B.Subgraph | B'.IsInduced ∧ Nonempty (A ≃g B'.coe)} := by
+  ext H'
+  simp only [Set.mem_range, Set.mem_setOf_eq]
+  constructor
+  · rintro ⟨f, rfl⟩
+    exact ⟨by simp [Subgraph.IsInduced, Relation.map_apply_apply, f.injective],
+           ⟨f.toCopy.isoToSubgraph⟩⟩
+  · rintro ⟨hInd, ⟨e⟩⟩
+    refine ⟨(Embedding.ofIsInduced H' hInd).comp e.toEmbedding, ?_⟩
+    have h : ((Embedding.ofIsInduced H' hInd).comp e.toEmbedding).toHom =
+        H'.hom.comp e.toHom := by ext; simp
+    simp [toSubgraph, h, Subgraph.map_comp]
+
 lemma toSubgraph_surjOn :
     Set.SurjOn (toSubgraph (A := A)) .univ {B' : B.Subgraph | Nonempty (A ≃g B'.coe)} :=
   fun H' hH' ↦ by simpa
@@ -201,6 +220,9 @@ instance [Fintype {f : G →g H // Injective f}] : Fintype (G.Copy H) :=
     toFun f := ⟨f.1, f.2⟩
     invFun f := ⟨f.1, f.2⟩
   }
+
+instance [Finite V] [Finite W] : Finite (G.Copy H) :=
+  Finite.of_injective _ DFunLike.coe_injective
 
 /-- A copy of `⊤` gives rise to an embedding of `⊤`. -/
 @[expose] def topEmbedding (f : Copy (⊤ : SimpleGraph α) G) : (⊤ : SimpleGraph α) ↪g G :=
@@ -297,10 +319,11 @@ lemma IsContained.of_isEmpty [IsEmpty α] : A ⊑ B :=
   ⟨⟨isEmptyElim, fun {a} ↦ isEmptyElim a⟩, isEmptyElim⟩
 
 /-- `⊥` is contained in any simple graph having sufficiently many vertices. -/
-lemma bot_isContained_iff_card_le [Fintype α] [Fintype β] :
-    (⊥ : SimpleGraph α) ⊑ B ↔ Fintype.card α ≤ Fintype.card β :=
-  ⟨fun ⟨f⟩ ↦ Fintype.card_le_of_embedding f.toEmbedding,
-    fun h ↦ ⟨Copy.bot (Function.Embedding.nonempty_of_card_le h).some⟩⟩
+lemma bot_isContained_iff_card_le [Finite α] [Finite β] :
+    (⊥ : SimpleGraph α) ⊑ B ↔ Nat.card α ≤ Nat.card β :=
+  ⟨fun ⟨f⟩ ↦ Finite.card_le_of_embedding f.toEmbedding,
+    fun h ↦ ⟨Copy.bot (Cardinal.lift_mk_le'.mp (by
+      simp only [← Nat.cast_card, Cardinal.lift_natCast]; exact_mod_cast h)).some⟩⟩
 
 protected alias IsContained.bot := bot_isContained_iff_card_le
 
@@ -328,9 +351,8 @@ theorem Copy.max_degree_le [Fintype V] [Fintype W] [DecidableRel G.Adj] [Decidab
   grind [degree_le_maxDegree H (f v), f.degree_le v]
 
 theorem IsContained.max_degree_le [Fintype V] [Fintype W] [DecidableRel G.Adj] [DecidableRel H.Adj]
-    (h : G ⊑ H) : G.maxDegree ≤ H.maxDegree := by
-  have ⟨f⟩ := h
-  exact f.max_degree_le
+    (h : G ⊑ H) : G.maxDegree ≤ H.maxDegree :=
+  h.elim Copy.max_degree_le
 
 @[gcongr]
 lemma maxDegree_mono {H : SimpleGraph V} [Fintype V] [DecidableRel G.Adj] [DecidableRel H.Adj]
@@ -370,12 +392,9 @@ lemma free_congr_right (e₂ : B ≃g C) : A.Free B ↔ A.Free C := free_congr .
 
 alias ⟨_, Free.congr_right⟩ := free_congr_right
 
-lemma free_bot (h : A ≠ ⊥) : A.Free (⊥ : SimpleGraph β) := by
-  rw [← edgeSet_nonempty] at h
-  intro ⟨f, hf⟩
-  absurd f.map_mem_edgeSet h.choose_spec
-  rw [edgeSet_bot]
-  exact Set.notMem_empty (h.choose.map f)
+lemma free_bot (h : A ≠ ⊥) : A.Free (⊥ : SimpleGraph β) :=
+  fun ⟨f⟩ ↦ absurd (f.toHom.map_mem_edgeSet (edgeSet_nonempty.mpr h).choose_spec)
+    (edgeSet_bot ▸ Set.notMem_empty _)
 
 end Free
 
@@ -478,94 +497,215 @@ in `H`.
 -/
 
 section LabeledCopyCount
-variable [Fintype V] [Fintype W]
 
 /-- `G.labeledCopyCount H` is the number of labeled copies of `H` in `G`, i.e. the number of graph
 embeddings from `H` to `G`. See `SimpleGraph.copyCount` for the number of unlabeled copies. -/
-noncomputable def labeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
-  classical exact Fintype.card (Copy H G)
+noncomputable def labeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ :=
+  Nat.card (Copy H G)
 
 @[deprecated (since := "2026-04-30")] alias labelledCopyCount := labeledCopyCount
 
+private instance [IsEmpty W] : Nonempty (H.Copy G) := IsContained.of_isEmpty
+
 @[simp] lemma labeledCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
-    G.labeledCopyCount H = 1 := by
-  convert Fintype.card_unique
-  exact { default := ⟨default, isEmptyElim⟩, uniq := fun _ ↦ Subsingleton.elim _ _ }
+    G.labeledCopyCount H = 1 := Nat.card_unique
 
 @[deprecated (since := "2026-04-30")]
 alias labelledCopyCount_of_isEmpty := labeledCopyCount_of_isEmpty
 
-@[simp] lemma labeledCopyCount_eq_zero : G.labeledCopyCount H = 0 ↔ H.Free G := by
-  simp [labeledCopyCount, Fintype.card_eq_zero_iff]
+@[simp] lemma labeledCopyCount_eq_zero [Finite V] [Finite W] :
+    G.labeledCopyCount H = 0 ↔ H.Free G := by
+  rw [labeledCopyCount, Nat.card_eq_zero, or_iff_left (Finite.not_infinite inferInstance)]
+  simp [Free, IsContained]
 
 @[deprecated (since := "2026-04-30")] alias labelledCopyCount_eq_zero := labeledCopyCount_eq_zero
 
-@[simp] lemma labeledCopyCount_pos : 0 < G.labeledCopyCount H ↔ H ⊑ G := by
-  simp [labeledCopyCount, IsContained, Fintype.card_pos_iff]
+@[simp] lemma labeledCopyCount_pos [Finite V] [Finite W] : 0 < G.labeledCopyCount H ↔ H ⊑ G := by
+  simp [Nat.pos_iff_ne_zero, labeledCopyCount_eq_zero]
 
 @[deprecated (since := "2026-04-30")] alias labelledCopyCount_pos := labeledCopyCount_pos
 
 end LabeledCopyCount
 
 section CopyCount
-variable [Fintype V]
 
 /-- `G.copyCount H` is the number of unlabeled copies of `H` in `G`, i.e. the number of subgraphs
 of `G` isomorphic to `H`. See `SimpleGraph.labeledCopyCount` for the number of labeled copies. -/
-noncomputable def copyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
-  classical exact #{G' : G.Subgraph | Nonempty (H ≃g G'.coe)}
+noncomputable def copyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ :=
+  Nat.card {G' : G.Subgraph // Nonempty (H ≃g G'.coe)}
 
-lemma copyCount_eq_card_image_copyToSubgraph [Fintype {f : H →g G // Injective f}]
-    [DecidableEq G.Subgraph] :
-    copyCount G H = #((Finset.univ : Finset (H.Copy G)).image Copy.toSubgraph) := by
+lemma copyCount_eq_nat_card_range_toSubgraph :
+    copyCount G H = Nat.card (Set.range (Copy.toSubgraph : H.Copy G → G.Subgraph)) := by
+  rw [copyCount, Copy.range_toSubgraph]; rfl
+
+@[deprecated copyCount_eq_nat_card_range_toSubgraph (since := "2026-05-04")]
+lemma copyCount_eq_card_image_copyToSubgraph [Fintype (H.Copy G)] [DecidableEq G.Subgraph] :
+    copyCount G H = (Finset.univ.image (Copy.toSubgraph (A := H) (B := G))).card := by
   rw [copyCount]
-  congr
-  refine Finset.coe_injective ?_
-  simpa [-Copy.range_toSubgraph] using Copy.range_toSubgraph.symm
+  exact Nat.subtype_card _ fun G' => by
+    simp only [Finset.mem_image, Finset.mem_univ, true_and]
+    constructor
+    · rintro ⟨f, rfl⟩; exact ⟨f.isoToSubgraph⟩
+    · rintro ⟨e⟩
+      exact ⟨⟨G'.hom.comp e.toHom, Subgraph.hom_injective.comp e.injective⟩,
+             by simp [Copy.toSubgraph, Subgraph.map_comp]⟩
 
-@[simp] lemma copyCount_eq_zero : G.copyCount H = 0 ↔ H.Free G := by
-  simp [copyCount, Free, -nonempty_subtype, isContained_iff_exists_iso_subgraph,
-    filter_eq_empty_iff]
+@[simp] lemma copyCount_eq_zero [Finite V] : G.copyCount H = 0 ↔ H.Free G := by
+  rw [copyCount, Nat.card_eq_zero, or_iff_left (Finite.not_infinite inferInstance), isEmpty_subtype]
+  simp [Free, isContained_iff_exists_iso_subgraph]
 
-@[simp] lemma copyCount_pos : 0 < G.copyCount H ↔ H ⊑ G := by
-  simp [copyCount, -nonempty_subtype, isContained_iff_exists_iso_subgraph, card_pos,
-    filter_nonempty_iff]
+@[simp] lemma copyCount_pos [Finite V] : 0 < G.copyCount H ↔ H ⊑ G := by
+  simp [Nat.pos_iff_ne_zero, copyCount_eq_zero]
 
 /-- There's at least as many labeled copies of `H` in `G` than unlabeled ones. -/
-lemma copyCount_le_labeledCopyCount [Fintype W] : G.copyCount H ≤ G.labeledCopyCount H := by
-  classical rw [copyCount_eq_card_image_copyToSubgraph]; exact card_image_le
+lemma copyCount_le_labeledCopyCount [Finite V] [Finite W] :
+    G.copyCount H ≤ G.labeledCopyCount H :=
+  copyCount_eq_nat_card_range_toSubgraph ▸ Finite.card_range_le _
 
 @[deprecated (since := "2026-04-30")]
 alias copyCount_le_labelledCopyCount := copyCount_le_labeledCopyCount
 
-@[simp] lemma copyCount_bot (G : SimpleGraph V) : copyCount G (⊥ : SimpleGraph V) = 1 := by
+private lemma subgraph_iso_bot [Finite V] (Gx : G.Subgraph) (e : (⊥ : SimpleGraph V) ≃g Gx.coe) :
+    Gx.verts = Set.univ ∧ Gx.Adj = ⊥ := by
+  exact ⟨Set.eq_univ_of_forall fun v ↦
+      let ⟨w, hw⟩ := Finite.injective_iff_surjective.mp
+        (Subtype.val_injective.comp e.toEquiv.injective) v
+      hw ▸ (e.toEquiv w).prop,
+    funext₂ fun a b => eq_false fun hadj =>
+      absurd (e.symm.map_rel_iff.mpr hadj.coe) (by simp)⟩
+
+private instance [Finite V] :
+    Nonempty {G' : G.Subgraph // Nonempty ((⊥ : SimpleGraph V) ≃g G'.coe)} :=
+  ⟨{ verts := .univ, Adj := ⊥, adj_sub := False.elim, edge_vert := False.elim },
+    ⟨⟨(Equiv.Set.univ V).symm, by simp⟩⟩⟩
+
+private instance [Finite V] :
+    Subsingleton {G' : G.Subgraph // Nonempty ((⊥ : SimpleGraph V) ≃g G'.coe)} := by
   classical
-  rw [copyCount]
-  convert card_singleton (α := G.Subgraph)
-    { verts := .univ
-      Adj := ⊥
-      adj_sub := False.elim
-      edge_vert := False.elim }
-  simp only [eq_singleton_iff_unique_mem, mem_filter_univ, Nonempty.forall]
-  refine ⟨⟨⟨(Equiv.Set.univ _).symm, by simp⟩⟩, fun H' e ↦
-    Subgraph.ext ((set_fintype_card_eq_univ_iff _).1 <| Fintype.card_congr e.toEquiv.symm) ?_⟩
-  ext a b
-  simp only [Prop.bot_eq_false, Pi.bot_apply, iff_false]
-  exact fun hab ↦ e.symm.map_rel_iff.2 hab.coe
+  constructor
+  rintro ⟨G', ⟨e⟩⟩ ⟨G'', ⟨e'⟩⟩
+  congr 1
+  exact Subgraph.ext ((subgraph_iso_bot G' e).1.trans (subgraph_iso_bot G'' e').1.symm)
+    ((subgraph_iso_bot G' e).2.trans (subgraph_iso_bot G'' e').2.symm)
+
+@[simp] lemma copyCount_bot [Finite V] (G : SimpleGraph V) :
+    copyCount G (⊥ : SimpleGraph V) = 1 := by
+  rw [copyCount]; exact Nat.card_unique
+
+private instance [IsEmpty W] : Nonempty {G' : G.Subgraph // Nonempty (H ≃g G'.coe)} :=
+  nonempty_subtype.mpr (isContained_iff_exists_iso_subgraph.mp IsContained.of_isEmpty)
+
+private instance [IsEmpty W] : Subsingleton {G' : G.Subgraph // Nonempty (H ≃g G'.coe)} :=
+  ⟨fun ⟨G', ⟨e⟩⟩ ⟨G'', ⟨e'⟩⟩ => Subtype.ext <|
+    (G'.eq_bot_iff_verts_eq_empty.mpr (Set.isEmpty_coe_sort.mp e.toEquiv.symm.isEmpty)).trans
+    (G''.eq_bot_iff_verts_eq_empty.mpr (Set.isEmpty_coe_sort.mp e'.toEquiv.symm.isEmpty)).symm⟩
 
 @[simp] lemma copyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
-    G.copyCount H = 1 := by
-  cases nonempty_fintype W
-  exact (copyCount_le_labeledCopyCount.trans_eq <| labeledCopyCount_of_isEmpty ..).antisymm <|
-    copyCount_pos.2 <| .of_isEmpty
+    G.copyCount H = 1 := by rw [copyCount]; exact Nat.card_unique
 
 end CopyCount
 
 /-!
 #### Induced copies
+-/
 
-TODO
+section IndLabeledCopyCount
 
+/-- `G.indLabeledCopyCount H` is the number of induced labeled copies of `H` in `G`,
+i.e., the number of graph embeddings from `H` to `G`.
+
+This is the induced analogue of `SimpleGraph.labeledCopyCount`. -/
+noncomputable def indLabeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ :=
+  Nat.card (H ↪g G)
+
+private instance [IsEmpty W] : Unique (H ↪g G) :=
+  ⟨⟨RelEmbedding.ofIsEmpty H.Adj G.Adj⟩,
+   fun _ => RelEmbedding.ext fun a => isEmptyElim a⟩
+
+@[simp] lemma indLabeledCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
+    G.indLabeledCopyCount H = 1 := Nat.card_unique
+
+private instance [Finite V] [Finite W] : Finite (H ↪g G) :=
+  Finite.of_injective Embedding.toCopy
+    fun _ _ h => RelEmbedding.ext fun x => DFunLike.congr_fun h x
+
+@[simp] lemma indLabeledCopyCount_eq_zero [Finite V] [Finite W] :
+    G.indLabeledCopyCount H = 0 ↔ ¬ H ⊴ G := by
+  rw [indLabeledCopyCount, Nat.card_eq_zero, or_iff_left (Finite.not_infinite inferInstance)]
+  exact not_nonempty_iff.symm
+
+@[simp] lemma indLabeledCopyCount_pos [Finite V] [Finite W] :
+    0 < G.indLabeledCopyCount H ↔ H ⊴ G := by
+  simp [Nat.pos_iff_ne_zero, indLabeledCopyCount_eq_zero]
+
+/-- Every induced labeled copy is a (non-induced) labeled copy. -/
+lemma indLabeledCopyCount_le_labeledCopyCount [Finite V] [Finite W] :
+    G.indLabeledCopyCount H ≤ G.labeledCopyCount H :=
+  Nat.card_le_card_of_injective Embedding.toCopy
+    fun _ _ h => RelEmbedding.ext fun w => DFunLike.congr_fun h w
+
+end IndLabeledCopyCount
+
+section IndCopyCount
+
+/-- `G.indCopyCount H` is the number of induced unlabeled copies of `H` in `G`,
+i.e., the number of induced subgraphs of `G` isomorphic to `H`.
+
+This is the induced analogue of `SimpleGraph.copyCount`. -/
+noncomputable def indCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ :=
+  Nat.card {G' : G.Subgraph // G'.IsInduced ∧ Nonempty (H ≃g G'.coe)}
+
+lemma indCopyCount_eq_nat_card_range_embeddingToSubgraph :
+    indCopyCount G H =
+      Nat.card (Set.range (fun e : H ↪g G => e.toCopy.toSubgraph)) := by
+  rw [indCopyCount, Copy.range_embeddingToSubgraph]; rfl
+
+@[deprecated indCopyCount_eq_nat_card_range_embeddingToSubgraph (since := "2026-05-04")]
+lemma indCopyCount_eq_card_image_embeddingToSubgraph
+    [Fintype (H ↪g G)] [DecidableEq G.Subgraph] :
+    G.indCopyCount H = #((Finset.univ : Finset (H ↪g G)).image (·.toCopy.toSubgraph)) := by
+  rw [indCopyCount_eq_nat_card_range_embeddingToSubgraph, Nat.card_eq_card_toFinset,
+    Set.toFinset_range]
+
+@[simp] lemma indCopyCount_eq_zero [Finite V] : G.indCopyCount H = 0 ↔ ¬ H ⊴ G := by
+  rw [indCopyCount, Nat.card_eq_zero, or_iff_left (Finite.not_infinite inferInstance),
+    isEmpty_subtype, isIndContained_iff_exists_iso_subgraph]
+  constructor
+  · rintro h ⟨G', e, hInd⟩; exact h G' ⟨hInd, ⟨e⟩⟩
+  · rintro h G' ⟨hInd, ⟨e⟩⟩; exact h ⟨G', e, hInd⟩
+
+@[simp] lemma indCopyCount_pos [Finite V] : 0 < G.indCopyCount H ↔ H ⊴ G := by
+  simp [Nat.pos_iff_ne_zero, indCopyCount_eq_zero]
+
+/-- Every induced unlabeled copy corresponds to at least one induced labeled copy. -/
+lemma indCopyCount_le_indLabeledCopyCount [Finite V] [Finite W] :
+    G.indCopyCount H ≤ G.indLabeledCopyCount H :=
+  indCopyCount_eq_nat_card_range_embeddingToSubgraph ▸ Finite.card_range_le _
+
+private instance [IsEmpty W] :
+    Nonempty {G' : G.Subgraph // G'.IsInduced ∧ Nonempty (H ≃g G'.coe)} :=
+  let ⟨G', ⟨e, hInd⟩⟩ := (IsIndContained.of_isEmpty (G := H) (H := G)).exists_iso_subgraph
+  ⟨⟨G', hInd, ⟨e⟩⟩⟩
+
+private instance [IsEmpty W] :
+    Subsingleton {G' : G.Subgraph // G'.IsInduced ∧ Nonempty (H ≃g G'.coe)} :=
+  ⟨fun ⟨G', ⟨_, ⟨e⟩⟩⟩ ⟨G'', ⟨_, ⟨e'⟩⟩⟩ => Subtype.ext <|
+    (G'.eq_bot_iff_verts_eq_empty.mpr (Set.isEmpty_coe_sort.mp e.toEquiv.symm.isEmpty)).trans
+    (G''.eq_bot_iff_verts_eq_empty.mpr (Set.isEmpty_coe_sort.mp e'.toEquiv.symm.isEmpty)).symm⟩
+
+@[simp] lemma indCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
+    G.indCopyCount H = 1 := by rw [indCopyCount]; exact Nat.card_unique
+
+/-- Every induced unlabeled copy is a (non-induced) unlabeled copy. -/
+lemma indCopyCount_le_copyCount [Finite V] : G.indCopyCount H ≤ G.copyCount H :=
+  Nat.card_le_card_of_injective
+    (fun G' : {G' : G.Subgraph // G'.IsInduced ∧ Nonempty (H ≃g G'.coe)} =>
+      (⟨G'.1, G'.2.2⟩ : {G' : G.Subgraph // Nonempty (H ≃g G'.coe)}))
+    fun _ _ h => Subtype.ext (congrArg (·.1) h)
+
+end IndCopyCount
+
+/-!
 ### Killing a subgraph
 
 An important aspect of graph containment is that we can remove not too many edges from a graph `H`
@@ -655,28 +795,28 @@ noncomputable instance killCopies.edgeSet.instFintype : Fintype (G.killCopies H)
 
 /-- Removing an edge from `H` for each subgraph isomorphic to `G` means that the number of edges
 we've removed is at most the number of copies of `G` in `H`. -/
-lemma le_card_edgeFinset_killCopies [Fintype V] :
+lemma le_card_edgeFinset_killCopies [Finite V] :
     #G.edgeFinset - G.copyCount H ≤ #(G.killCopies H).edgeFinset := by
   classical
   obtain rfl | hH := eq_or_ne H ⊥
   · simp [← card_edgeSet]
   let f (G' : {G' : G.Subgraph // Nonempty (H ≃g G'.coe)}) := (aux hH G'.2).some
-  calc
-    _ = #G.edgeFinset - card {G' : G.Subgraph // Nonempty (H ≃g G'.coe)} := ?_
-    _ ≤ #G.edgeFinset - #(univ.image f) := Nat.sub_le_sub_left card_image_le _
-    _ = #G.edgeFinset - #(Set.range f).toFinset := by rw [Set.toFinset_range]
-    _ ≤ #(G.edgeFinset \ (Set.range f).toFinset) := le_card_sdiff ..
-    _ = #(G.killCopies H).edgeFinset := ?_
-  · simp only [edgeFinset, Set.toFinset_card]
-    rw [← Set.toFinset_card, ← edgeFinset, copyCount, ← card_subtype, subtype_univ, card_univ]
-  congr 1
-  ext e
-  induction e using Sym2.inductionOn with | hf v w
-  simp [mem_edgeSet, killCopies_of_ne_bot hH, f, eq_comm]
+  have hrf : (Set.range f).Finite := Set.finite_range f
+  have hle : hrf.toFinset.card ≤ G.copyCount H := by
+    rw [← Nat.card_eq_card_finite_toFinset hrf, copyCount]
+    exact Finite.card_range_le f
+  calc #G.edgeFinset - G.copyCount H
+      ≤ #G.edgeFinset - hrf.toFinset.card := Nat.sub_le_sub_left hle _
+    _ ≤ #(G.edgeFinset \ hrf.toFinset) := le_card_sdiff ..
+    _ = #(G.killCopies H).edgeFinset := by
+        congr 1
+        ext e
+        induction e using Sym2.inductionOn with | hf v w
+        simp [mem_edgeSet, killCopies_of_ne_bot hH, f, eq_comm]
 
 /-- Removing an edge from `H` for each subgraph isomorphic to `G` means that the number of edges
 we've removed is at most the number of copies of `G` in `H`. -/
-lemma le_card_edgeFinset_killCopies_add_copyCount [Fintype V] :
+lemma le_card_edgeFinset_killCopies_add_copyCount [Finite V] :
     #G.edgeFinset ≤ #(G.killCopies H).edgeFinset + G.copyCount H :=
   tsub_le_iff_right.1 le_card_edgeFinset_killCopies
 
