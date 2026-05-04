@@ -195,6 +195,21 @@ noncomputable def isoToSubgraph (f : Copy A B) : A ≃g f.toSubgraph.coe :=
     refine ⟨⟨H'.hom.comp e.toHom, Subgraph.hom_injective.comp e.injective⟩, ?_⟩
     simp [toSubgraph, Subgraph.map_comp]
 
+lemma range_embeddingToSubgraph :
+    Set.range (fun f : A ↪g B => f.toCopy.toSubgraph) =
+    {B' : B.Subgraph | B'.IsInduced ∧ Nonempty (A ≃g B'.coe)} := by
+  ext H'
+  simp only [Set.mem_range, Set.mem_setOf_eq]
+  constructor
+  · rintro ⟨f, rfl⟩
+    exact ⟨by simp [Subgraph.IsInduced, Relation.map_apply_apply, f.injective],
+           ⟨f.toCopy.isoToSubgraph⟩⟩
+  · rintro ⟨hInd, ⟨e⟩⟩
+    refine ⟨(Embedding.ofIsInduced H' hInd).comp e.toEmbedding, ?_⟩
+    have h : ((Embedding.ofIsInduced H' hInd).comp e.toEmbedding).toHom =
+        H'.hom.comp e.toHom := by ext; simp
+    simp [toSubgraph, h, Subgraph.map_comp]
+
 lemma toSubgraph_surjOn :
     Set.SurjOn (toSubgraph (A := A)) .univ {B' : B.Subgraph | Nonempty (A ≃g B'.coe)} :=
   fun H' hH' ↦ by simpa
@@ -593,6 +608,7 @@ end CopyCount
 
 /-!
 #### Induced copies
+-/
 
 section IndLabeledCopyCount
 
@@ -605,15 +621,19 @@ noncomputable def indLabeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : 
 
 private instance [IsEmpty W] : Unique (H ↪g G) :=
   ⟨⟨RelEmbedding.ofIsEmpty H.Adj G.Adj⟩,
-   fun f => RelEmbedding.ext fun a => isEmptyElim a⟩
+   fun _ => RelEmbedding.ext fun a => isEmptyElim a⟩
 
 @[simp] lemma indLabeledCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
     G.indLabeledCopyCount H = 1 := Nat.card_unique
 
+private instance [Finite V] [Finite W] : Finite (H ↪g G) :=
+  Finite.of_injective Embedding.toCopy
+    fun _ _ h => RelEmbedding.ext fun x => DFunLike.congr_fun h x
+
 @[simp] lemma indLabeledCopyCount_eq_zero [Finite V] [Finite W] :
     G.indLabeledCopyCount H = 0 ↔ ¬ H ⊴ G := by
-  rw [indLabeledCopyCount, Nat.card_eq_zero, or_iff_left (Finite.not_infinite _)]
-  exact not_nonempty_iff
+  rw [indLabeledCopyCount, Nat.card_eq_zero, or_iff_left (Finite.not_infinite inferInstance)]
+  exact not_nonempty_iff.symm
 
 @[simp] lemma indLabeledCopyCount_pos [Finite V] [Finite W] :
     0 < G.indLabeledCopyCount H ↔ H ⊴ G := by
@@ -623,7 +643,7 @@ private instance [IsEmpty W] : Unique (H ↪g G) :=
 lemma indLabeledCopyCount_le_labeledCopyCount [Finite V] [Finite W] :
     G.indLabeledCopyCount H ≤ G.labeledCopyCount H :=
   Nat.card_le_card_of_injective Embedding.toCopy
-    fun f g h => RelEmbedding.ext fun w => DFunLike.congr_fun h w
+    fun _ _ h => RelEmbedding.ext fun w => DFunLike.congr_fun h w
 
 end IndLabeledCopyCount
 
@@ -639,7 +659,7 @@ noncomputable def indCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ :=
 lemma indCopyCount_eq_nat_card_range_embeddingToSubgraph :
     indCopyCount G H =
       Nat.card (Set.range (fun e : H ↪g G => e.toCopy.toSubgraph)) := by
-  rw [indCopyCount, Copy.range_embeddingToSubgraph]
+  rw [indCopyCount, Copy.range_embeddingToSubgraph]; rfl
 
 @[deprecated indCopyCount_eq_nat_card_range_embeddingToSubgraph (since := "2026-05-04")]
 lemma indCopyCount_eq_card_image_embeddingToSubgraph
@@ -649,11 +669,11 @@ lemma indCopyCount_eq_card_image_embeddingToSubgraph
     Set.toFinset_range]
 
 @[simp] lemma indCopyCount_eq_zero [Finite V] : G.indCopyCount H = 0 ↔ ¬ H ⊴ G := by
-  rw [indCopyCount, Nat.card_eq_zero, or_iff_left (Finite.not_infinite _), isEmpty_subtype,
-    isIndContained_iff_exists_iso_subgraph]
+  rw [indCopyCount, Nat.card_eq_zero, or_iff_left (Finite.not_infinite inferInstance),
+    isEmpty_subtype, isIndContained_iff_exists_iso_subgraph]
   constructor
-  · intro h G' e hInd; exact h G' ⟨hInd, ⟨e⟩⟩
-  · rintro h G' ⟨hInd, ⟨e⟩⟩; exact h G' e hInd
+  · rintro h ⟨G', e, hInd⟩; exact h G' ⟨hInd, ⟨e⟩⟩
+  · rintro h G' ⟨hInd, ⟨e⟩⟩; exact h ⟨G', e, hInd⟩
 
 @[simp] lemma indCopyCount_pos [Finite V] : 0 < G.indCopyCount H ↔ H ⊴ G := by
   simp [Nat.pos_iff_ne_zero, indCopyCount_eq_zero]
@@ -665,12 +685,12 @@ lemma indCopyCount_le_indLabeledCopyCount [Finite V] [Finite W] :
 
 private instance [IsEmpty W] :
     Nonempty {G' : G.Subgraph // G'.IsInduced ∧ Nonempty (H ≃g G'.coe)} :=
-  let ⟨G', e, hInd⟩ := IsIndContained.of_isEmpty.exists_iso_subgraph
+  let ⟨G', ⟨e, hInd⟩⟩ := (IsIndContained.of_isEmpty (G := H) (H := G)).exists_iso_subgraph
   ⟨⟨G', hInd, ⟨e⟩⟩⟩
 
 private instance [IsEmpty W] :
     Subsingleton {G' : G.Subgraph // G'.IsInduced ∧ Nonempty (H ≃g G'.coe)} :=
-  ⟨fun ⟨G', -, ⟨e⟩⟩ ⟨G'', -, ⟨e'⟩⟩ => Subtype.ext <|
+  ⟨fun ⟨G', ⟨_, ⟨e⟩⟩⟩ ⟨G'', ⟨_, ⟨e'⟩⟩⟩ => Subtype.ext <|
     (G'.eq_bot_iff_verts_eq_empty.mpr (Set.isEmpty_coe_sort.mp e.toEquiv.symm.isEmpty)).trans
     (G''.eq_bot_iff_verts_eq_empty.mpr (Set.isEmpty_coe_sort.mp e'.toEquiv.symm.isEmpty)).symm⟩
 
@@ -682,7 +702,7 @@ lemma indCopyCount_le_copyCount [Finite V] : G.indCopyCount H ≤ G.copyCount H 
   Nat.card_le_card_of_injective
     (fun G' : {G' : G.Subgraph // G'.IsInduced ∧ Nonempty (H ≃g G'.coe)} =>
       (⟨G'.1, G'.2.2⟩ : {G' : G.Subgraph // Nonempty (H ≃g G'.coe)}))
-    fun _ _ h => Subtype.ext (congrArg Subtype.val h)
+    fun _ _ h => Subtype.ext (congrArg (·.1) h)
 
 end IndCopyCount
 
