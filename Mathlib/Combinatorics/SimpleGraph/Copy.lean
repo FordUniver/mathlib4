@@ -595,84 +595,94 @@ end CopyCount
 #### Induced copies
 
 section IndLabeledCopyCount
-variable [Fintype V] [Fintype W]
 
 /-- `G.indLabeledCopyCount H` is the number of induced labeled copies of `H` in `G`,
 i.e., the number of graph embeddings from `H` to `G`.
 
 This is the induced analogue of `SimpleGraph.labeledCopyCount`. -/
-noncomputable def indLabeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
-  classical exact Fintype.card (H ↪g G)
+noncomputable def indLabeledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ :=
+  Nat.card (H ↪g G)
+
+private instance [IsEmpty W] : Unique (H ↪g G) :=
+  ⟨⟨RelEmbedding.ofIsEmpty H.Adj G.Adj⟩,
+   fun f => RelEmbedding.ext fun a => isEmptyElim a⟩
 
 @[simp] lemma indLabeledCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
-    G.indLabeledCopyCount H = 1 := by
-  convert Fintype.card_unique
-  exact { default := RelEmbedding.ofIsEmpty H.Adj G.Adj
-          uniq := fun f => RelEmbedding.ext fun a => isEmptyElim a }
+    G.indLabeledCopyCount H = 1 := Nat.card_unique
 
-@[simp] lemma indLabeledCopyCount_eq_zero : G.indLabeledCopyCount H = 0 ↔ ¬ H ⊴ G := by
-  simp [indLabeledCopyCount, Fintype.card_eq_zero_iff, IsIndContained]
+@[simp] lemma indLabeledCopyCount_eq_zero [Finite V] [Finite W] :
+    G.indLabeledCopyCount H = 0 ↔ ¬ H ⊴ G := by
+  rw [indLabeledCopyCount, Nat.card_eq_zero, or_iff_left (Finite.not_infinite _)]
+  exact not_nonempty_iff
 
-@[simp] lemma indLabeledCopyCount_pos : 0 < G.indLabeledCopyCount H ↔ H ⊴ G := by
+@[simp] lemma indLabeledCopyCount_pos [Finite V] [Finite W] :
+    0 < G.indLabeledCopyCount H ↔ H ⊴ G := by
   simp [Nat.pos_iff_ne_zero, indLabeledCopyCount_eq_zero]
 
 /-- Every induced labeled copy is a (non-induced) labeled copy. -/
-lemma indLabeledCopyCount_le_labeledCopyCount :
-    G.indLabeledCopyCount H ≤ G.labeledCopyCount H := by
-  classical
-  exact Fintype.card_le_of_injective Embedding.toCopy fun f g h =>
-    RelEmbedding.ext fun w => DFunLike.congr_fun h w
+lemma indLabeledCopyCount_le_labeledCopyCount [Finite V] [Finite W] :
+    G.indLabeledCopyCount H ≤ G.labeledCopyCount H :=
+  Nat.card_le_card_of_injective Embedding.toCopy
+    fun f g h => RelEmbedding.ext fun w => DFunLike.congr_fun h w
 
 end IndLabeledCopyCount
 
 section IndCopyCount
-variable [Fintype V]
 
 /-- `G.indCopyCount H` is the number of induced unlabeled copies of `H` in `G`,
 i.e., the number of induced subgraphs of `G` isomorphic to `H`.
 
 This is the induced analogue of `SimpleGraph.copyCount`. -/
-noncomputable def indCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
-  classical exact #{G' : G.Subgraph | G'.IsInduced ∧ Nonempty (H ≃g G'.coe)}
+noncomputable def indCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ :=
+  Nat.card {G' : G.Subgraph // G'.IsInduced ∧ Nonempty (H ≃g G'.coe)}
 
+lemma indCopyCount_eq_nat_card_range_embeddingToSubgraph :
+    indCopyCount G H =
+      Nat.card (Set.range (fun e : H ↪g G => e.toCopy.toSubgraph)) := by
+  rw [indCopyCount, Copy.range_embeddingToSubgraph]
+
+@[deprecated indCopyCount_eq_nat_card_range_embeddingToSubgraph (since := "2026-05-04")]
 lemma indCopyCount_eq_card_image_embeddingToSubgraph
-    [Fintype W] [DecidableEq G.Subgraph] :
+    [Fintype (H ↪g G)] [DecidableEq G.Subgraph] :
     G.indCopyCount H = #((Finset.univ : Finset (H ↪g G)).image (·.toCopy.toSubgraph)) := by
-  rw [indCopyCount]
-  congr
-  refine Finset.coe_injective ?_
-  simpa using Copy.range_embeddingToSubgraph.symm
+  rw [indCopyCount_eq_nat_card_range_embeddingToSubgraph, Nat.card_eq_card_toFinset,
+    Set.toFinset_range]
 
-@[simp] lemma indCopyCount_pos : 0 < G.indCopyCount H ↔ H ⊴ G := by
-  rw [isIndContained_iff_exists_iso_subgraph]
-  classical
-  simp only [indCopyCount, card_pos, filter_nonempty_iff, mem_univ, true_and]
-  exact ⟨fun ⟨G', hInd, hn⟩ => ⟨G', hn.some, hInd⟩,
-         fun ⟨G', e, hInd⟩ => ⟨G', hInd, ⟨e⟩⟩⟩
+@[simp] lemma indCopyCount_eq_zero [Finite V] : G.indCopyCount H = 0 ↔ ¬ H ⊴ G := by
+  rw [indCopyCount, Nat.card_eq_zero, or_iff_left (Finite.not_infinite _), isEmpty_subtype,
+    isIndContained_iff_exists_iso_subgraph]
+  constructor
+  · intro h G' e hInd; exact h G' ⟨hInd, ⟨e⟩⟩
+  · rintro h G' ⟨hInd, ⟨e⟩⟩; exact h G' e hInd
 
-@[simp] lemma indCopyCount_eq_zero : G.indCopyCount H = 0 ↔ ¬ H ⊴ G := by
-  rw [← indCopyCount_pos]; omega
+@[simp] lemma indCopyCount_pos [Finite V] : 0 < G.indCopyCount H ↔ H ⊴ G := by
+  simp [Nat.pos_iff_ne_zero, indCopyCount_eq_zero]
 
 /-- Every induced unlabeled copy corresponds to at least one induced labeled copy. -/
-lemma indCopyCount_le_indLabeledCopyCount [Fintype W] :
-    G.indCopyCount H ≤ G.indLabeledCopyCount H := by
-  classical
-  rw [indCopyCount_eq_card_image_embeddingToSubgraph]
-  exact card_image_le
+lemma indCopyCount_le_indLabeledCopyCount [Finite V] [Finite W] :
+    G.indCopyCount H ≤ G.indLabeledCopyCount H :=
+  indCopyCount_eq_nat_card_range_embeddingToSubgraph ▸ Finite.card_range_le _
+
+private instance [IsEmpty W] :
+    Nonempty {G' : G.Subgraph // G'.IsInduced ∧ Nonempty (H ≃g G'.coe)} :=
+  let ⟨G', e, hInd⟩ := IsIndContained.of_isEmpty.exists_iso_subgraph
+  ⟨⟨G', hInd, ⟨e⟩⟩⟩
+
+private instance [IsEmpty W] :
+    Subsingleton {G' : G.Subgraph // G'.IsInduced ∧ Nonempty (H ≃g G'.coe)} :=
+  ⟨fun ⟨G', -, ⟨e⟩⟩ ⟨G'', -, ⟨e'⟩⟩ => Subtype.ext <|
+    (G'.eq_bot_iff_verts_eq_empty.mpr (Set.isEmpty_coe_sort.mp e.toEquiv.symm.isEmpty)).trans
+    (G''.eq_bot_iff_verts_eq_empty.mpr (Set.isEmpty_coe_sort.mp e'.toEquiv.symm.isEmpty)).symm⟩
 
 @[simp] lemma indCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
-    G.indCopyCount H = 1 := by
-  cases nonempty_fintype W
-  exact (indCopyCount_le_indLabeledCopyCount.trans_eq <|
-      indLabeledCopyCount_of_isEmpty ..).antisymm <|
-    indCopyCount_pos.2 <| .of_isEmpty
+    G.indCopyCount H = 1 := by rw [indCopyCount]; exact Nat.card_unique
 
 /-- Every induced unlabeled copy is a (non-induced) unlabeled copy. -/
-lemma indCopyCount_le_copyCount : G.indCopyCount H ≤ G.copyCount H := by
-  classical
-  simp only [indCopyCount, copyCount]
-  exact Finset.card_le_card fun G' hG' => by
-    grind
+lemma indCopyCount_le_copyCount [Finite V] : G.indCopyCount H ≤ G.copyCount H :=
+  Nat.card_le_card_of_injective
+    (fun G' : {G' : G.Subgraph // G'.IsInduced ∧ Nonempty (H ≃g G'.coe)} =>
+      (⟨G'.1, G'.2.2⟩ : {G' : G.Subgraph // Nonempty (H ≃g G'.coe)}))
+    fun _ _ h => Subtype.ext (congrArg Subtype.val h)
 
 end IndCopyCount
 
