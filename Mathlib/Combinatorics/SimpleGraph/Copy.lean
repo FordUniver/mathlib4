@@ -333,9 +333,8 @@ theorem Copy.max_degree_le [Fintype V] [Fintype W] [DecidableRel G.Adj] [Decidab
   grind [degree_le_maxDegree H (f v), f.degree_le v]
 
 theorem IsContained.max_degree_le [Fintype V] [Fintype W] [DecidableRel G.Adj] [DecidableRel H.Adj]
-    (h : G ⊑ H) : G.maxDegree ≤ H.maxDegree := by
-  have ⟨f⟩ := h
-  exact f.max_degree_le
+    (h : G ⊑ H) : G.maxDegree ≤ H.maxDegree :=
+  h.elim Copy.max_degree_le
 
 @[gcongr]
 lemma maxDegree_mono {H : SimpleGraph V} [Fintype V] [DecidableRel G.Adj] [DecidableRel H.Adj]
@@ -375,12 +374,9 @@ lemma free_congr_right (e₂ : B ≃g C) : A.Free B ↔ A.Free C := free_congr .
 
 alias ⟨_, Free.congr_right⟩ := free_congr_right
 
-lemma free_bot (h : A ≠ ⊥) : A.Free (⊥ : SimpleGraph β) := by
-  rw [← edgeSet_nonempty] at h
-  intro ⟨f, hf⟩
-  absurd f.map_mem_edgeSet h.choose_spec
-  rw [edgeSet_bot]
-  exact Set.notMem_empty (h.choose.map f)
+lemma free_bot (h : A ≠ ⊥) : A.Free (⊥ : SimpleGraph β) :=
+  fun ⟨f⟩ ↦ absurd (f.toHom.map_mem_edgeSet (edgeSet_nonempty.mpr h).choose_spec)
+    (edgeSet_bot ▸ Set.notMem_empty _)
 
 end Free
 
@@ -553,14 +549,12 @@ alias copyCount_le_labelledCopyCount := copyCount_le_labeledCopyCount
 
 private lemma subgraph_iso_bot [Finite V] (Gx : G.Subgraph) (e : (⊥ : SimpleGraph V) ≃g Gx.coe) :
     Gx.verts = Set.univ ∧ Gx.Adj = ⊥ := by
-  constructor
-  · apply Set.eq_univ_of_forall
-    intro v
-    obtain ⟨w, hw⟩ := (Finite.injective_iff_surjective.mp
-      (Subtype.val_injective.comp e.toEquiv.injective)) v
-    exact hw ▸ (e.toEquiv w).prop
-  · exact funext₂ fun a b => eq_false fun hadj =>
-        absurd (e.symm.map_rel_iff.mpr hadj.coe) (by simp)
+  exact ⟨Set.eq_univ_of_forall fun v ↦
+      let ⟨w, hw⟩ := Finite.injective_iff_surjective.mp
+        (Subtype.val_injective.comp e.toEquiv.injective) v
+      hw ▸ (e.toEquiv w).prop,
+    funext₂ fun a b => eq_false fun hadj =>
+      absurd (e.symm.map_rel_iff.mpr hadj.coe) (by simp)⟩
 
 private instance [Finite V] :
     Nonempty {G' : G.Subgraph // Nonempty ((⊥ : SimpleGraph V) ≃g G'.coe)} :=
