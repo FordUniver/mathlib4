@@ -73,6 +73,12 @@ theorem tendsto_one_div_add_atTop_nhds_zero_nat {𝕜 : Type*} [DivisionSemiring
   suffices Tendsto (fun n : ℕ ↦ 1 / (↑(n + 1) : 𝕜)) atTop (𝓝 0) by simpa
   (tendsto_add_atTop_iff_nat 1).2 tendsto_one_div_atTop_nhds_zero_nat
 
+theorem tendsto_const_div_add_atTop_nhds_zero_nat {𝕜 : Type*} [DivisionSemiring 𝕜] [CharZero 𝕜]
+    [TopologicalSpace 𝕜] [ContinuousSMul ℚ≥0 𝕜] [ContinuousMul 𝕜] (C : 𝕜) (k : ℕ) :
+    Tendsto (fun n : ℕ ↦ C / ((n : 𝕜) + k)) atTop (𝓝 0) :=
+  suffices Tendsto (fun n : ℕ ↦ C / (↑(n + k) : 𝕜)) atTop (𝓝 0) by simpa [Nat.cast_add]
+  (tendsto_add_atTop_iff_nat k).2 (tendsto_const_div_atTop_nhds_zero_nat C)
+
 theorem tendsto_algebraMap_inv_atTop_nhds_zero_nat {𝕜 : Type*} (A : Type*)
     [Semifield 𝕜] [CharZero 𝕜] [TopologicalSpace 𝕜] [ContinuousSMul ℚ≥0 𝕜]
     [Semiring A] [Algebra 𝕜 A] [TopologicalSpace A] [ContinuousSMul 𝕜 A] :
