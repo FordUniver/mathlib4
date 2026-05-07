@@ -223,6 +223,11 @@ lemma Filter.Tendsto.const_div_atTop (hg : Tendsto g l atTop) (r : 𝕜) :
     Tendsto (fun n ↦ r / g n) l (𝓝 0) :=
   tendsto_const_nhds.div_atTop hg
 
+lemma Filter.Tendsto.const_div_atTop_add_const_right
+    (hg : Tendsto g l atTop) (k r : 𝕜) :
+    Tendsto (fun n ↦ r / (g n + k)) l (𝓝 0) :=
+  (tendsto_atTop_add_const_right l k hg).const_div_atTop r
+
 lemma Filter.Tendsto.const_div_atBot (hg : Tendsto g l atBot) (r : 𝕜) :
     Tendsto (fun n ↦ r / g n) l (𝓝 0) :=
   tendsto_const_nhds.div_atBot hg
