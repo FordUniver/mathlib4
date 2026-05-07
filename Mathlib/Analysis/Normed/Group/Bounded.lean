@@ -152,6 +152,16 @@ lemma tendsto_norm_comp_cofinite_atTop_of_isClosedEmbedding' {X : Type*} [Topolo
 
 end SeminormedGroup
 
+section SeminormedCommGroup
+variable [SeminormedCommGroup E] {s : Set E}
+
+@[to_additive norm_sub_le_diam_of_mem]
+theorem norm_div_le_diam_of_mem' (h : IsBounded s) {x y : E} (hx : x ∈ s) (hy : y ∈ s) :
+    ‖x / y‖ ≤ diam s := by
+  simpa only [← dist_eq_norm_div] using dist_le_diam_of_mem h hx hy
+
+end SeminormedCommGroup
+
 section NormedAddGroup
 variable [NormedAddGroup E] [TopologicalSpace α] {f : α → E}
 
