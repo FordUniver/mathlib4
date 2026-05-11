@@ -34,3 +34,18 @@ theorem contDiff {n : WithTop ℕ∞} (f : V →ᴬ[𝕜] W) : ContDiff 𝕜 n f
   exact contDiff_const
 
 end ContinuousAffineMap
+
+namespace AffineMap
+
+variable {𝕜 V : Type*} [NontriviallyNormedField 𝕜]
+variable [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+
+/-- `AffineMap.lineMap` is smooth as a function `𝕜 → V`. -/
+theorem lineMap_contDiff (p₀ p₁ : V) {n : WithTop ℕ∞} :
+    ContDiff 𝕜 n (AffineMap.lineMap p₀ p₁ : 𝕜 → V) := by
+  have : (AffineMap.lineMap p₀ p₁ : 𝕜 → V) = fun c => c • (p₁ - p₀) + p₀ :=
+    funext fun c => AffineMap.lineMap_apply_module' p₀ p₁ c
+  rw [this]
+  fun_prop
+
+end AffineMap
