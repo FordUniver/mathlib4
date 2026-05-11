@@ -199,6 +199,16 @@ instance [Fintype {f : G →g H // Injective f}] : Fintype (G.Copy H) :=
     invFun f := ⟨f.1, f.2⟩
   }
 
+instance instFintypeInjectiveHom
+    [Fintype V] [Fintype W] [DecidableEq V] [DecidableEq W]
+    [DecidableRel G.Adj] [DecidableRel H.Adj] :
+    Fintype {f : G →g H // Function.Injective f} :=
+    Fintype.ofEquiv {f : V → W // (∀ v w, G.Adj v w → H.Adj (f v) (f w)) ∧ Function.Injective f}
+    { toFun := fun f => ⟨⟨f.1, fun h => f.2.1 _ _ h⟩, f.2.2⟩
+      invFun := fun f => ⟨f.1, ⟨fun v w h => f.1.map_adj h, f.2⟩⟩
+      left_inv := by intro f; rfl
+      right_inv := by intro f; rfl }
+
 /-- A copy of `⊤` gives rise to an embedding of `⊤`. -/
 @[simps!]
 def topEmbedding (f : Copy (⊤ : SimpleGraph α) G) : (⊤ : SimpleGraph α) ↪g G :=
@@ -479,6 +489,10 @@ variable [Fintype V] [Fintype W]
 embeddings from `H` to `G`. See `SimpleGraph.copyCount` for the number of unlabelled copies. -/
 noncomputable def labelledCopyCount (G : SimpleGraph V) (H : SimpleGraph W) : ℕ := by
   classical exact Fintype.card (Copy H G)
+
+def labelledCopyCountComputable (G : SimpleGraph V) (H : SimpleGraph W) [Fintype V] [Fintype W]
+[DecidableEq V] [DecidableEq W]
+[DecidableRel G.Adj] [DecidableRel H.Adj] : ℕ := Fintype.card (Copy H G)
 
 @[simp] lemma labelledCopyCount_of_isEmpty [IsEmpty W] (G : SimpleGraph V) (H : SimpleGraph W) :
     G.labelledCopyCount H = 1 := by
