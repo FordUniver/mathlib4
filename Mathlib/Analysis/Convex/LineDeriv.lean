@@ -44,7 +44,30 @@ the first-order inequality `f x + lineDeriv ℝ f x (y - x) ≤ f y` holds. -/
 theorem add_lineDeriv_le (hc : ConvexOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     (hf : LineDifferentiableAt ℝ f x (y - x)) :
     f x + lineDeriv ℝ f x (y - x) ≤ f y := by
-  sorry
+  -- The 1D restriction of `f` to the segment from `x` to `y`.
+  set g : ℝ → ℝ := fun t => f (x + t • (y - x)) with hg_def
+  -- Bridge `g = f ∘ AffineMap.lineMap x y` (differ only by `add_comm` inside `f`).
+  have hg_comp : g = f ∘ AffineMap.lineMap x y := by
+    funext t
+    change f (x + t • (y - x)) = f (AffineMap.lineMap x y t)
+    rw [AffineMap.lineMap_apply_module', add_comm]
+  -- Endpoint identities.
+  have hg0 : g 0 = f x := by simp [g]
+  have hg1 : g 1 = f y := by simp [g]
+  -- `g` is convex on `Icc 0 1`.
+  have hg_conv : ConvexOn ℝ (Set.Icc (0 : ℝ) 1) g := by
+    rw [hg_comp]
+    refine (hc.comp_affineMap (AffineMap.lineMap x y)).subset (fun t ht => ?_)
+      (convex_Icc _ _)
+    exact hc.1.segment_subset hx hy (lineMap_mem_segment ℝ x y ht)
+  -- `g` has derivative `lineDeriv ℝ f x (y - x)` at `0` — directly from `LineDifferentiableAt`.
+  have hg_deriv : HasDerivAt g (lineDeriv ℝ f x (y - x)) 0 := hf.hasDerivAt
+  -- Apply the 1D first-order convexity inequality at points `0 < 1` in `Icc 0 1`.
+  have h_slope := hg_conv.le_slope_of_hasDerivAt
+    (Set.left_mem_Icc.mpr zero_le_one) (Set.right_mem_Icc.mpr zero_le_one) zero_lt_one hg_deriv
+  -- `slope g 0 1 = g 1 - g 0 = f y - f x`; rearrange.
+  rw [slope_def_field, hg0, hg1, sub_zero, div_one] at h_slope
+  linarith
 
 /-- Monotonicity of the directional derivative along the chord: for convex `f`
 line-differentiable at both endpoints in direction `y - x`,
