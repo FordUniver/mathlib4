@@ -6,7 +6,7 @@ Authors: Christoph Spiegel
 module
 
 public import Mathlib.Analysis.Calculus.LipschitzSmooth.Gradient
-public import Mathlib.Analysis.Convex.Function
+public import Mathlib.Analysis.Convex.Gradient
 
 /-!
 # Convex Lipschitz-smooth functions and the Baillon-Haddad theorem
