@@ -76,7 +76,23 @@ theorem lineDeriv_sub_apply_nonneg (hc : ConvexOn ℝ s f) (hx : x ∈ s) (hy : 
     (hfx : LineDifferentiableAt ℝ f x (y - x))
     (hfy : LineDifferentiableAt ℝ f y (y - x)) :
     0 ≤ lineDeriv ℝ f y (y - x) - lineDeriv ℝ f x (y - x) := by
-  sorry
+  -- `f x + lineDeriv f x (y - x) ≤ f y` from `add_lineDeriv_le` at `(x, y)`.
+  have h1 : f x + lineDeriv ℝ f x (y - x) ≤ f y :=
+    hc.add_lineDeriv_le hx hy hfx
+  -- For the symmetric bound at `(y, x)`, line-differentiability in direction `x - y`
+  -- is equivalent to line-differentiability in direction `y - x` (smul by `-1`).
+  have hfy' : LineDifferentiableAt ℝ f y (x - y) := by
+    have : (x - y) = (-1 : ℝ) • (y - x) := by rw [neg_one_smul, neg_sub]
+    rw [this]
+    exact hfy.smul (-1)
+  -- `f y + lineDeriv f y (x - y) ≤ f x` from `add_lineDeriv_le` at `(y, x)`.
+  have h2 : f y + lineDeriv ℝ f y (x - y) ≤ f x :=
+    hc.add_lineDeriv_le hy hx hfy'
+  -- Rewrite `lineDeriv f y (x - y) = -lineDeriv f y (y - x)`.
+  have h3 : lineDeriv ℝ f y (x - y) = -lineDeriv ℝ f y (y - x) := by
+    rw [show (x - y) = -(y - x) from (neg_sub y x).symm, lineDeriv_neg]
+  rw [h3] at h2
+  linarith
 
 end ConvexOn
 
@@ -87,7 +103,24 @@ the reverse first-order inequality `f y ≤ f x + lineDeriv ℝ f x (y - x)` hol
 theorem le_add_lineDeriv (hc : ConcaveOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     (hf : LineDifferentiableAt ℝ f x (y - x)) :
     f y ≤ f x + lineDeriv ℝ f x (y - x) := by
-  sorry
+  -- Mirror of `ConvexOn.add_lineDeriv_le` using `ConcaveOn.slope_le_of_hasDerivAt`.
+  set g : ℝ → ℝ := fun t => f (x + t • (y - x)) with hg_def
+  have hg_comp : g = f ∘ AffineMap.lineMap x y := by
+    funext t
+    change f (x + t • (y - x)) = f (AffineMap.lineMap x y t)
+    rw [AffineMap.lineMap_apply_module', add_comm]
+  have hg0 : g 0 = f x := by simp [g]
+  have hg1 : g 1 = f y := by simp [g]
+  have hg_conc : ConcaveOn ℝ (Set.Icc (0 : ℝ) 1) g := by
+    rw [hg_comp]
+    refine (hc.comp_affineMap (AffineMap.lineMap x y)).subset (fun t ht => ?_)
+      (convex_Icc _ _)
+    exact hc.1.segment_subset hx hy (lineMap_mem_segment ℝ x y ht)
+  have hg_deriv : HasDerivAt g (lineDeriv ℝ f x (y - x)) 0 := hf.hasDerivAt
+  have h_slope := hg_conc.slope_le_of_hasDerivAt
+    (Set.left_mem_Icc.mpr zero_le_one) (Set.right_mem_Icc.mpr zero_le_one) zero_lt_one hg_deriv
+  rw [slope_def_field, hg0, hg1, sub_zero, div_one] at h_slope
+  linarith
 
 end ConcaveOn
 
