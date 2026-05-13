@@ -48,6 +48,47 @@ variable {K : NNReal} {f : F → ℝ}
 open InnerProductSpace
 open scoped Gradient RealInnerProductSpace
 
+/-- Core Baillon-Haddad estimate (`K > 0` case): for convex differentiable `K`-smooth `f`,
+`‖∇f y - ∇f x‖² ≤ 2K · (f y - f x - ⟪∇f x, y - x⟫)`. Direct proof via the descent inequality
+applied at the auxiliary point `u := y - (1/K) · (∇f y - ∇f x)` combined with the
+first-order convexity inequality at `(x, u)`. -/
+private theorem norm_gradient_sub_sq_le_aux (hc : ConvexOn ℝ Set.univ f)
+    (hf : Differentiable ℝ f) (hs : LipschitzSmoothWith K f) (hKp : 0 < (K : ℝ)) (x y : F) :
+    ‖∇ f y - ∇ f x‖ ^ 2 ≤ 2 * K * (f y - f x - ⟪∇ f x, y - x⟫) := by
+  set g := ∇ f y - ∇ f x with hg
+  set u := y - ((1 : ℝ) / K) • g with hu
+  have huy : u - y = -((1 / (K : ℝ)) • g) := by rw [hu]; module
+  have hux : u - x = (y - x) - ((1 / (K : ℝ)) • g) := by rw [hu]; module
+  have h_foc : f x + ⟪∇ f x, u - x⟫ ≤ f u :=
+    hc.add_inner_gradient_le (Set.mem_univ x) (Set.mem_univ u) (hf x)
+  have h_desc : f u ≤ f y + ⟪∇ f y, u - y⟫ + (K : ℝ) / 2 * ‖u - y‖ ^ 2 :=
+    hs.inner_gradient_descent_le hf y u
+  -- Simplify the inner products and norm appearing in h_foc and h_desc
+  have huy_inner : ⟪∇ f y, u - y⟫_ℝ = -(1 / (K : ℝ) * ⟪∇ f y, g⟫_ℝ) := by
+    rw [huy, inner_neg_right, inner_smul_right]
+  have hux_inner : ⟪∇ f x, u - x⟫_ℝ = ⟪∇ f x, y - x⟫_ℝ - 1 / (K : ℝ) * ⟪∇ f x, g⟫_ℝ := by
+    rw [hux, inner_sub_right, inner_smul_right]
+  have huy_norm : (K : ℝ) / 2 * ‖u - y‖ ^ 2 = ‖g‖ ^ 2 / (2 * K) := by
+    rw [huy, norm_neg, norm_smul, Real.norm_eq_abs,
+      abs_of_pos (by positivity : (0 : ℝ) < 1 / K)]
+    field_simp
+  rw [hux_inner] at h_foc
+  rw [huy_inner, huy_norm] at h_desc
+  -- Inner-product identity: (1/K) (⟪∇f y, g⟫ - ⟪∇f x, g⟫) = ‖g‖² / K
+  have h_inner_diff :
+      1 / (K : ℝ) * ⟪∇ f y, g⟫_ℝ - 1 / (K : ℝ) * ⟪∇ f x, g⟫_ℝ = ‖g‖ ^ 2 / K := by
+    rw [← mul_sub, ← inner_sub_left, ← hg, real_inner_self_eq_norm_sq]
+    ring
+  -- ‖g‖²/K = 2 · ‖g‖²/(2K)
+  have h_div_rel : ‖g‖ ^ 2 / (K : ℝ) = 2 * (‖g‖ ^ 2 / (2 * K)) := by field_simp
+  -- Combine: ‖g‖²/(2K) ≤ f y - f x - ⟪∇f x, y - x⟫
+  have h_half : ‖g‖ ^ 2 / (2 * (K : ℝ)) ≤ f y - f x - ⟪∇ f x, y - x⟫_ℝ := by
+    linarith [h_foc, h_desc, h_inner_diff, h_div_rel]
+  -- Multiply by 2K
+  have h_norm_eq : ‖g‖ ^ 2 = 2 * (K : ℝ) * (‖g‖ ^ 2 / (2 * K)) := by field_simp
+  rw [h_norm_eq]
+  exact mul_le_mul_of_nonneg_left h_half (by positivity)
+
 /-- **Baillon-Haddad theorem.** A differentiable convex `K`-smooth function on a Hilbert
 space is `K`-cocoercive.
 
@@ -56,10 +97,31 @@ with minimum at `x` (since `∇φₓ(x) = 0`). Apply the descent inequality of `
 stepping by `-∇φₓ(y) / K`; using `φₓ(x) = min φₓ` yields
 `‖∇f(y) - ∇f(x)‖² ≤ 2K (f(y) - f(x) - ⟨∇f(x), y - x⟩)`. Sum with the symmetric bound from
 `φᵧ`, and the linear terms in `f` cancel to give the cocoercive inequality. -/
+
 theorem cocoerciveWith_of_lipschitzSmoothWith
     (hc : ConvexOn ℝ Set.univ f) (hf : Differentiable ℝ f)
-    (hs : LipschitzSmoothWith K f) : CocoerciveWith K f :=
-  sorry
+    (hs : LipschitzSmoothWith K f) : CocoerciveWith K f := by
+  intro x y
+  by_cases hK : (K : ℝ) = 0
+  · -- K = 0: gradient is forced constant; both sides become 0.
+    sorry
+  · have hKp : 0 < (K : ℝ) := lt_of_le_of_ne K.coe_nonneg (Ne.symm hK)
+    have h1 := norm_gradient_sub_sq_le_aux hc hf hs hKp x y
+    have h2 := norm_gradient_sub_sq_le_aux hc hf hs hKp y x
+    have h_norm_sym : ‖∇ f x - ∇ f y‖ ^ 2 = ‖∇ f y - ∇ f x‖ ^ 2 := by
+      rw [← neg_sub, norm_neg]
+    rw [h_norm_sym] at h2
+    -- h1: ‖∇f y - ∇f x‖² ≤ 2K (f y - f x - ⟪∇f x, y - x⟫)
+    -- h2: ‖∇f y - ∇f x‖² ≤ 2K (f x - f y - ⟪∇f y, x - y⟫)
+    -- Sum: 2 ‖∇f y - ∇f x‖² ≤ 2K (- ⟪∇f x, y - x⟫ - ⟪∇f y, x - y⟫)
+    --                       = 2K ⟪∇f y - ∇f x, y - x⟫
+    -- So ‖∇f y - ∇f x‖² ≤ K ⟪∇f y - ∇f x, y - x⟫
+    have h_inner_split : ⟪∇ f x, y - x⟫_ℝ + ⟪∇ f y, x - y⟫_ℝ
+        = -⟪∇ f y - ∇ f x, y - x⟫_ℝ := by
+      rw [show (x - y : F) = -(y - x) from (neg_sub y x).symm, inner_neg_right,
+        inner_sub_left]
+      ring
+    nlinarith [h1, h2, h_inner_split, K.coe_nonneg]
 
 /-- For a differentiable convex function on a Hilbert space, `K`-smoothness is equivalent
 to `K`-cocoercivity. The forward direction is the Baillon-Haddad theorem; the backward
