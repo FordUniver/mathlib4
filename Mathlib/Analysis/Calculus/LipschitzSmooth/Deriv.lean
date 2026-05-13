@@ -39,9 +39,7 @@ variable {K : NNReal} {f : ℝ → ℝ}
 theorem deriv_descent_le (h : LipschitzSmoothWith K f) (hf : Differentiable ℝ f) (x y : ℝ) :
     f y ≤ f x + deriv f x * (y - x) + ↑K / 2 * (y - x) ^ 2 := by
   have hbase := h.fderiv_descent_le hf x y
-  rw [fderiv_eq_deriv_mul, Real.dist_eq, sq_abs,
-    show (x - y) ^ 2 = (y - x) ^ 2 from by ring] at hbase
-  exact hbase
+  rwa [fderiv_eq_deriv_mul, dist_comm, Real.dist_eq, sq_abs] at hbase
 
 /-- For a differentiable `K`-smooth `f : ℝ → ℝ`, the variation bound in 1D form:
 `(deriv f y - deriv f x) * (y - x) ≤ K * (y - x)^2`. The `deriv` restatement of
@@ -49,9 +47,7 @@ theorem deriv_descent_le (h : LipschitzSmoothWith K f) (hf : Differentiable ℝ 
 theorem deriv_sub_mul_le (h : LipschitzSmoothWith K f) (hf : Differentiable ℝ f) (x y : ℝ) :
     (deriv f y - deriv f x) * (y - x) ≤ ↑K * (y - x) ^ 2 := by
   have hbase := h.fderiv_sub_apply_le hf x y
-  rw [ContinuousLinearMap.sub_apply, fderiv_eq_deriv_mul, fderiv_eq_deriv_mul,
-    ← sub_mul, Real.dist_eq, sq_abs,
-    show (x - y) ^ 2 = (y - x) ^ 2 from by ring] at hbase
-  exact hbase
+  rwa [ContinuousLinearMap.sub_apply, fderiv_eq_deriv_mul, fderiv_eq_deriv_mul, ← sub_mul,
+    dist_comm, Real.dist_eq, sq_abs] at hbase
 
 end LipschitzSmoothWith
