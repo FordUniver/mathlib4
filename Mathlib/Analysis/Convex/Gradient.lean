@@ -82,7 +82,10 @@ end StrictConvexOn
 
 /-- A differentiable function on a Hilbert space is convex iff it satisfies the first-order
 gradient inequality at every pair of points in `s`. -/
-theorem convexOn_iff_add_inner_gradient_le (hs : Convex ℝ s) (hf : DifferentiableOn ℝ f s) :
-    ConvexOn ℝ s f ↔
-      ∀ x ∈ s, ∀ y ∈ s, f x + ⟪∇ f x, y - x⟫ ≤ f y := by
-  sorry
+theorem convexOn_iff_add_inner_gradient_le (hs : Convex ℝ s)
+    (hf : ∀ x ∈ s, DifferentiableAt ℝ f x) :
+    ConvexOn ℝ s f ↔ ∀ x ∈ s, ∀ y ∈ s, f x + ⟪∇ f x, y - x⟫ ≤ f y := by
+  rw [convexOn_iff_add_fderiv_le hs hf]
+  refine forall_congr' fun _ => imp_congr_right fun _ => forall_congr' fun _ =>
+    imp_congr_right fun _ => ?_
+  rw [inner_gradient_left]

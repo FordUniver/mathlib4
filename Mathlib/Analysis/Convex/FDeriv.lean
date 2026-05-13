@@ -77,7 +77,10 @@ end StrictConvexOn
 
 /-- A differentiable function is convex iff it satisfies the first-order inequality
 at every pair of points in `s`. -/
-theorem convexOn_iff_add_fderiv_le (hs : Convex ℝ s) (hf : DifferentiableOn ℝ f s) :
+theorem convexOn_iff_add_fderiv_le (hs : Convex ℝ s) (hf : ∀ x ∈ s, DifferentiableAt ℝ f x) :
     ConvexOn ℝ s f ↔
       ∀ x ∈ s, ∀ y ∈ s, f x + fderiv ℝ f x (y - x) ≤ f y := by
-  sorry
+  rw [convexOn_iff_add_lineDeriv_le hs fun x hx _ _ => (hf x hx).lineDifferentiableAt]
+  refine forall_congr' fun x => imp_congr_right fun hx => forall_congr' fun _ =>
+    imp_congr_right fun _ => ?_
+  rw [(hf x hx).lineDeriv_eq_fderiv]

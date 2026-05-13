@@ -101,7 +101,17 @@ when `x ≠ y`, the inequality is strict. -/
 theorem add_lineDeriv_lt (hc : StrictConvexOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s) (hxy : x ≠ y)
     (hf : LineDifferentiableAt ℝ f x (y - x)) :
     f x + lineDeriv ℝ f x (y - x) < f y := by
-  sorry
+  have h₂ : (0 : ℝ) < 1 / 2 := by norm_num
+  have hsum : (1 : ℝ) / 2 + 1 / 2 = 1 := by norm_num
+  have hm_mem : ((1 : ℝ) / 2) • x + ((1 : ℝ) / 2) • y ∈ s := hc.1 hx hy h₂.le h₂.le hsum
+  have hm_strict := hc.2 hx hy hxy h₂ h₂ hsum
+  have hm_eq : ((1 : ℝ) / 2) • x + ((1 : ℝ) / 2) • y - x = ((1 : ℝ) / 2) • (y - x) := by module
+  have hf' : LineDifferentiableAt ℝ f x (((1 : ℝ) / 2) • x + ((1 : ℝ) / 2) • y - x) :=
+    hm_eq.symm ▸ hf.smul ((1 : ℝ) / 2)
+  have h_le := hc.convexOn.add_lineDeriv_le hx hm_mem hf'
+  rw [hm_eq, lineDeriv_smul] at h_le
+  simp only [smul_eq_mul] at h_le hm_strict
+  linarith
 
 end StrictConvexOn
 
@@ -111,4 +121,30 @@ theorem convexOn_iff_add_lineDeriv_le (hs : Convex ℝ s)
     (hf : ∀ x ∈ s, ∀ y ∈ s, LineDifferentiableAt ℝ f x (y - x)) :
     ConvexOn ℝ s f ↔
       ∀ x ∈ s, ∀ y ∈ s, f x + lineDeriv ℝ f x (y - x) ≤ f y := by
-  sorry
+  refine ⟨fun hc x hx y hy => hc.add_lineDeriv_le hx hy (hf x hx y hy), fun H => ⟨hs, ?_⟩⟩
+  intro x hx y hy a b ha hb hab
+  set z := a • x + b • y with hz
+  have hzs : z ∈ s := hs hx hy ha hb hab
+  have hb_eq : b = 1 - a := by linarith
+  have hxz_eq : x - z = b • (x - y) := by rw [hz, hb_eq]; module
+  have hyz_eq : y - z = a • (y - x) := by rw [hz, hb_eq]; module
+  have hzx : f z + b * lineDeriv ℝ f z (x - y) ≤ f x := by
+    have h := H z hzs x hx
+    rwa [hxz_eq, lineDeriv_smul, smul_eq_mul] at h
+  have hzy : f z + a * lineDeriv ℝ f z (y - x) ≤ f y := by
+    have h := H z hzs y hy
+    rwa [hyz_eq, lineDeriv_smul, smul_eq_mul] at h
+  have hflip : lineDeriv ℝ f z (y - x) = -lineDeriv ℝ f z (x - y) := by
+    rw [show (y - x : E) = -(x - y) from (neg_sub _ _).symm, lineDeriv_neg]
+  rw [hflip] at hzy
+  change f z ≤ a • f x + b • f y
+  simp only [smul_eq_mul]
+  set L := lineDeriv ℝ f z (x - y)
+  have h1 : a * f z + a * b * L ≤ a * f x := by
+    have := mul_le_mul_of_nonneg_left hzx ha
+    linarith [show a * (f z + b * L) = a * f z + a * b * L by ring]
+  have h2 : b * f z - a * b * L ≤ b * f y := by
+    have := mul_le_mul_of_nonneg_left hzy hb
+    linarith [show b * (f z + a * -L) = b * f z - a * b * L by ring]
+  have hab_fz : a * f z + b * f z = f z := by linear_combination (f z) * hab
+  linarith
