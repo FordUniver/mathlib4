@@ -102,15 +102,17 @@ theorem add_lineDeriv_lt (hc : StrictConvexOn ℝ s f) (hx : x ∈ s) (hy : y �
     (hf : LineDifferentiableAt ℝ f x (y - x)) :
     f x + lineDeriv ℝ f x (y - x) < f y := by
   have h₂ : (0 : ℝ) < 1 / 2 := by norm_num
-  have hsum : (1 : ℝ) / 2 + 1 / 2 = 1 := by norm_num
-  have hm_mem : ((1 : ℝ) / 2) • x + ((1 : ℝ) / 2) • y ∈ s := hc.1 hx hy h₂.le h₂.le hsum
-  have hm_strict := hc.2 hx hy hxy h₂ h₂ hsum
+  have hm_mem : ((1 : ℝ) / 2) • x + ((1 : ℝ) / 2) • y ∈ s :=
+    hc.1 hx hy h₂.le h₂.le (by norm_num)
   have hm_eq : ((1 : ℝ) / 2) • x + ((1 : ℝ) / 2) • y - x = ((1 : ℝ) / 2) • (y - x) := by module
-  have hf' : LineDifferentiableAt ℝ f x (((1 : ℝ) / 2) • x + ((1 : ℝ) / 2) • y - x) :=
-    hm_eq.symm ▸ hf.smul ((1 : ℝ) / 2)
-  have h_le := hc.convexOn.add_lineDeriv_le hx hm_mem hf'
-  rw [hm_eq, lineDeriv_smul] at h_le
-  simp only [smul_eq_mul] at h_le hm_strict
+  have h_le : f x + (1 / 2) * lineDeriv ℝ f x (y - x) ≤
+      f (((1 : ℝ) / 2) • x + ((1 : ℝ) / 2) • y) := by
+    have h := hc.convexOn.add_lineDeriv_le hx hm_mem (hm_eq.symm ▸ hf.smul _)
+    rwa [hm_eq, lineDeriv_smul, smul_eq_mul] at h
+  have h_lt : f (((1 : ℝ) / 2) • x + ((1 : ℝ) / 2) • y) <
+      (1 / 2) * f x + (1 / 2) * f y := by
+    have h := hc.2 hx hy hxy h₂ h₂ (by norm_num)
+    simp only [smul_eq_mul] at h; exact h
   linarith
 
 end StrictConvexOn
@@ -126,25 +128,19 @@ theorem convexOn_iff_add_lineDeriv_le (hs : Convex ℝ s)
   set z := a • x + b • y with hz
   have hzs : z ∈ s := hs hx hy ha hb hab
   have hb_eq : b = 1 - a := by linarith
-  have hxz_eq : x - z = b • (x - y) := by rw [hz, hb_eq]; module
-  have hyz_eq : y - z = a • (y - x) := by rw [hz, hb_eq]; module
-  have hzx : f z + b * lineDeriv ℝ f z (x - y) ≤ f x := by
+  set L := lineDeriv ℝ f z (x - y) with hL
+  have hzx : f z + b * L ≤ f x := by
     have h := H z hzs x hx
-    rwa [hxz_eq, lineDeriv_smul, smul_eq_mul] at h
-  have hzy : f z + a * lineDeriv ℝ f z (y - x) ≤ f y := by
+    have hxz : x - z = b • (x - y) := by rw [hz, hb_eq]; module
+    rwa [hxz, lineDeriv_smul, smul_eq_mul] at h
+  have hzy : f z - a * L ≤ f y := by
     have h := H z hzs y hy
-    rwa [hyz_eq, lineDeriv_smul, smul_eq_mul] at h
-  have hflip : lineDeriv ℝ f z (y - x) = -lineDeriv ℝ f z (x - y) := by
-    rw [show (y - x : E) = -(x - y) from (neg_sub _ _).symm, lineDeriv_neg]
-  rw [hflip] at hzy
+    have hyz : y - z = -(a • (x - y)) := by rw [hz, hb_eq]; module
+    rw [hyz, lineDeriv_neg, lineDeriv_smul, smul_eq_mul] at h
+    linarith
   change f z ≤ a • f x + b • f y
   simp only [smul_eq_mul]
-  set L := lineDeriv ℝ f z (x - y)
-  have h1 : a * f z + a * b * L ≤ a * f x := by
-    have := mul_le_mul_of_nonneg_left hzx ha
-    linarith [show a * (f z + b * L) = a * f z + a * b * L by ring]
-  have h2 : b * f z - a * b * L ≤ b * f y := by
-    have := mul_le_mul_of_nonneg_left hzy hb
-    linarith [show b * (f z + a * -L) = b * f z - a * b * L by ring]
-  have hab_fz : a * f z + b * f z = f z := by linear_combination (f z) * hab
-  linarith
+  calc f z
+      = a * (f z + b * L) + b * (f z - a * L) := by linear_combination (f z) * hab.symm
+    _ ≤ a * f x + b * f y :=
+        add_le_add (mul_le_mul_of_nonneg_left hzx ha) (mul_le_mul_of_nonneg_left hzy hb)
