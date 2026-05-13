@@ -75,7 +75,7 @@ theorem add_lineDeriv_le (hc : ConvexOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     hc.lineRestriction hx hy
   have hg_deriv : HasDerivAt (fun t : ℝ => f (x + t • (y - x))) (lineDeriv ℝ f x (y - x)) 0 :=
     hf.hasDerivAt
-  have h := hg_conv.add_hasDerivAt_mul_le
+  have h := ConvexOn.add_hasDerivAt_mul_le hg_conv
     (Set.left_mem_Icc.mpr zero_le_one) (Set.right_mem_Icc.mpr zero_le_one) zero_lt_one hg_deriv
   simpa using h
 
@@ -118,7 +118,7 @@ theorem le_add_lineDeriv (hc : ConcaveOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     hc.lineRestriction hx hy
   have hg_deriv : HasDerivAt (fun t : ℝ => f (x + t • (y - x))) (lineDeriv ℝ f x (y - x)) 0 :=
     hf.hasDerivAt
-  have h := hg_conc.le_add_hasDerivAt_mul
+  have h := ConcaveOn.le_add_hasDerivAt_mul hg_conc
     (Set.left_mem_Icc.mpr zero_le_one) (Set.right_mem_Icc.mpr zero_le_one) zero_lt_one hg_deriv
   simpa using h
 

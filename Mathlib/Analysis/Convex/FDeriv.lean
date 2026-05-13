@@ -41,14 +41,17 @@ namespace ConvexOn
 theorem add_fderiv_le (hc : ConvexOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     (hf : DifferentiableAt ℝ f x) :
     f x + fderiv ℝ f x (y - x) ≤ f y := by
-  sorry
+  rw [← hf.lineDeriv_eq_fderiv]
+  exact hc.add_lineDeriv_le hx hy hf.lineDifferentiableAt
 
 /-- Monotonicity of the Fréchet derivative along the chord: for convex `f` differentiable
 at `x` and `y`, `0 ≤ (fderiv ℝ f y - fderiv ℝ f x) (y - x)`. -/
 theorem fderiv_sub_apply_nonneg (hc : ConvexOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     (hfx : DifferentiableAt ℝ f x) (hfy : DifferentiableAt ℝ f y) :
     0 ≤ (fderiv ℝ f y - fderiv ℝ f x) (y - x) := by
-  sorry
+  have h := hc.lineDeriv_sub_apply_nonneg hx hy
+    hfx.lineDifferentiableAt hfy.lineDifferentiableAt
+  rwa [hfx.lineDeriv_eq_fderiv, hfy.lineDeriv_eq_fderiv, ← ContinuousLinearMap.sub_apply] at h
 
 end ConvexOn
 
@@ -59,7 +62,8 @@ inequality `f y ≤ f x + (fderiv ℝ f x) (y - x)` holds. -/
 theorem le_add_fderiv (hc : ConcaveOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     (hf : DifferentiableAt ℝ f x) :
     f y ≤ f x + fderiv ℝ f x (y - x) := by
-  sorry
+  rw [← hf.lineDeriv_eq_fderiv]
+  exact hc.le_add_lineDeriv hx hy hf.lineDifferentiableAt
 
 end ConcaveOn
 
@@ -70,7 +74,8 @@ when `x ≠ y`, the inequality is strict. -/
 theorem add_fderiv_lt (hc : StrictConvexOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s) (hxy : x ≠ y)
     (hf : DifferentiableAt ℝ f x) :
     f x + fderiv ℝ f x (y - x) < f y := by
-  sorry
+  rw [← hf.lineDeriv_eq_fderiv]
+  exact hc.add_lineDeriv_lt hx hy hxy hf.lineDifferentiableAt
 
 end StrictConvexOn
 

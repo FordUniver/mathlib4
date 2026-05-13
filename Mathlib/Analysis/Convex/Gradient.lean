@@ -43,14 +43,17 @@ inequality `f x + ⟪∇ f x, y - x⟫ ≤ f y` holds. -/
 theorem add_inner_gradient_le (hc : ConvexOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     (hf : DifferentiableAt ℝ f x) :
     f x + ⟪∇ f x, y - x⟫ ≤ f y := by
-  sorry
+  rw [inner_gradient_left]
+  exact hc.add_fderiv_le hx hy hf
 
 /-- Monotonicity of the gradient along the chord: for convex `f` differentiable at `x`
 and `y`, `0 ≤ ⟪∇ f y - ∇ f x, y - x⟫`. -/
 theorem inner_gradient_sub_nonneg (hc : ConvexOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     (hfx : DifferentiableAt ℝ f x) (hfy : DifferentiableAt ℝ f y) :
     0 ≤ ⟪∇ f y - ∇ f x, y - x⟫ := by
-  sorry
+  rw [inner_sub_left, inner_gradient_left, inner_gradient_left,
+    ← ContinuousLinearMap.sub_apply]
+  exact hc.fderiv_sub_apply_nonneg hx hy hfx hfy
 
 end ConvexOn
 
@@ -61,7 +64,8 @@ first-order inequality `f y ≤ f x + ⟪∇ f x, y - x⟫` holds. -/
 theorem le_add_inner_gradient (hc : ConcaveOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     (hf : DifferentiableAt ℝ f x) :
     f y ≤ f x + ⟪∇ f x, y - x⟫ := by
-  sorry
+  rw [inner_gradient_left]
+  exact hc.le_add_fderiv hx hy hf
 
 end ConcaveOn
 
@@ -71,7 +75,8 @@ namespace StrictConvexOn
 theorem add_inner_gradient_lt (hc : StrictConvexOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     (hxy : x ≠ y) (hf : DifferentiableAt ℝ f x) :
     f x + ⟪∇ f x, y - x⟫ < f y := by
-  sorry
+  rw [inner_gradient_left]
+  exact hc.add_fderiv_lt hx hy hxy hf
 
 end StrictConvexOn
 
