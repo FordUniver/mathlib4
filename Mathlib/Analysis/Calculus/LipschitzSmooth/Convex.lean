@@ -97,14 +97,36 @@ with minimum at `x` (since `∇φₓ(x) = 0`). Apply the descent inequality of `
 stepping by `-∇φₓ(y) / K`; using `φₓ(x) = min φₓ` yields
 `‖∇f(y) - ∇f(x)‖² ≤ 2K (f(y) - f(x) - ⟨∇f(x), y - x⟩)`. Sum with the symmetric bound from
 `φᵧ`, and the linear terms in `f` cancel to give the cocoercive inequality. -/
-
 theorem cocoerciveWith_of_lipschitzSmoothWith
     (hc : ConvexOn ℝ Set.univ f) (hf : Differentiable ℝ f)
     (hs : LipschitzSmoothWith K f) : CocoerciveWith K f := by
   intro x y
   by_cases hK : (K : ℝ) = 0
-  · -- K = 0: gradient is forced constant; both sides become 0.
-    sorry
+  · -- K = 0: descent + FOC pinch `f b = f a + ⟪∇f a, b - a⟫` to equality everywhere,
+    -- forcing `f` affine and `∇f` constant. Both sides of the cocoercive bound are then 0.
+    have h_eq : ∀ a b : F, f b = f a + ⟪∇ f a, b - a⟫_ℝ := by
+      intro a b
+      have h_descent : f b ≤ f a + ⟪∇ f a, b - a⟫_ℝ := by
+        have h := hs.inner_gradient_descent_le hf a b
+        rw [hK] at h; simpa using h
+      exact le_antisymm h_descent
+        (hc.add_inner_gradient_le (Set.mem_univ a) (Set.mem_univ b) (hf a))
+    -- From the equality, derive `⟪∇f y, v⟫ = ⟪∇f x, v⟫` for all `v` by inspecting
+    -- the equation at the pair (y + v, y) versus (y + v, x).
+    have h_grad_eq : ∀ v : F, ⟪∇ f y, v⟫_ℝ = ⟪∇ f x, v⟫_ℝ := by
+      intro v
+      have e1 := h_eq x (y + v)
+      have e2 := h_eq y (y + v)
+      have e3 := h_eq x y
+      rw [show (y + v) - y = v from by abel] at e2
+      rw [show (y + v) - x = (y - x) + v from by abel, inner_add_right] at e1
+      linarith
+    -- Take `v = ∇f y - ∇f x` to get `‖∇f y - ∇f x‖² = 0`.
+    have h_zero : ‖∇ f y - ∇ f x‖ ^ 2 = 0 := by
+      rw [← real_inner_self_eq_norm_sq, inner_sub_left]
+      linarith [h_grad_eq (∇ f y - ∇ f x)]
+    rw [h_zero, hK]
+    simp
   · have hKp : 0 < (K : ℝ) := lt_of_le_of_ne K.coe_nonneg (Ne.symm hK)
     have h1 := norm_gradient_sub_sq_le_aux hc hf hs hKp x y
     have h2 := norm_gradient_sub_sq_le_aux hc hf hs hKp y x
