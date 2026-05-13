@@ -24,6 +24,7 @@ in `Mathlib.Analysis.Convex.FDeriv`, lifted via `inner_gradient_left`.
 * `ConvexOn.add_inner_gradient_le` — the first-order convexity inequality (gradient form).
 * `ConcaveOn.le_add_inner_gradient` — the concave dual.
 * `ConvexOn.inner_gradient_sub_nonneg` — monotonicity: `0 ≤ ⟪∇ f y - ∇ f x, y - x⟫`.
+* `ConvexOn.isMinOn_of_gradient_eq_zero` — convex + zero gradient at `x` ⟹ `x` minimizes `f`.
 * `StrictConvexOn.add_inner_gradient_lt` — strict variant.
 * `convexOn_iff_add_inner_gradient_le` — iff converse.
 -/
@@ -54,6 +55,14 @@ theorem inner_gradient_sub_nonneg (hc : ConvexOn ℝ s f) (hx : x ∈ s) (hy : y
   rw [inner_sub_left, inner_gradient_left, inner_gradient_left,
     ← ContinuousLinearMap.sub_apply]
   exact hc.fderiv_sub_apply_nonneg hx hy hfx hfy
+
+/-- A convex function attains its minimum on `s` at any critical point: if `f` is convex on
+`s`, Fréchet-differentiable at `x ∈ s`, and `∇ f x = 0`, then `x` minimizes `f` on `s`.
+Multi-dimensional gradient analogue of `ConvexOn.isMinOn_of_rightDeriv_eq_zero`. -/
+theorem isMinOn_of_gradient_eq_zero (hc : ConvexOn ℝ s f) (hx : x ∈ s)
+    (hf : DifferentiableAt ℝ f x) (hg : ∇ f x = 0) :
+    IsMinOn f s x := fun _ hy => by
+  simpa [hg] using hc.add_inner_gradient_le hx hy hf
 
 end ConvexOn
 
