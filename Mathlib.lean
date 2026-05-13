@@ -1776,6 +1776,7 @@ public import Mathlib.Analysis.Calculus.LineDeriv.Measurable
 public import Mathlib.Analysis.Calculus.LineDeriv.QuadraticMap
 public import Mathlib.Analysis.Calculus.LipschitzSmooth.Basic
 public import Mathlib.Analysis.Calculus.LipschitzSmooth.Convex
+public import Mathlib.Analysis.Calculus.LipschitzSmooth.Deriv
 public import Mathlib.Analysis.Calculus.LipschitzSmooth.FDeriv
 public import Mathlib.Analysis.Calculus.LipschitzSmooth.Gradient
 public import Mathlib.Analysis.Calculus.LocalExtr.Basic
