@@ -40,28 +40,22 @@ variable {f : E → ℝ} {s : Set E} {x y : E}
 /-- The 1D restriction `t ↦ f (x + t • (y - x))` of a function convex on `s`, where `x, y ∈ s`,
 is convex on `Icc 0 1` (the segment from `x` to `y` lies in `s` by convexity of `s`). -/
 theorem ConvexOn.lineRestriction (hc : ConvexOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s) :
-    ConvexOn ℝ (Set.Icc (0 : ℝ) 1) (fun t => f (x + t • (y - x))) := by
-  have heq : (fun t : ℝ => f (x + t • (y - x))) = f ∘ AffineMap.lineMap x y := by
-    funext t
-    change f (x + t • (y - x)) = f (AffineMap.lineMap x y t)
-    rw [AffineMap.lineMap_apply_module', add_comm]
-  rw [heq]
-  refine (hc.comp_affineMap (AffineMap.lineMap x y)).subset (fun t ht => ?_)
+    ConvexOn ℝ (Set.Icc 0 1) (fun t : ℝ => f (x + t • (y - x))) := by
+  rw [show (fun t : ℝ => f (x + t • (y - x))) = f ∘ AffineMap.lineMap x y from
+    funext fun t => by rw [Function.comp_apply, AffineMap.lineMap_apply_module', add_comm]]
+  exact (hc.comp_affineMap (AffineMap.lineMap x y)).subset
+    (fun t ht => hc.1.segment_subset hx hy (lineMap_mem_segment ℝ x y ht))
     (convex_Icc _ _)
-  exact hc.1.segment_subset hx hy (lineMap_mem_segment ℝ x y ht)
 
 /-- The 1D restriction `t ↦ f (x + t • (y - x))` of a function concave on `s`, where `x, y ∈ s`,
 is concave on `Icc 0 1`. -/
 theorem ConcaveOn.lineRestriction (hc : ConcaveOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s) :
-    ConcaveOn ℝ (Set.Icc (0 : ℝ) 1) (fun t => f (x + t • (y - x))) := by
-  have heq : (fun t : ℝ => f (x + t • (y - x))) = f ∘ AffineMap.lineMap x y := by
-    funext t
-    change f (x + t • (y - x)) = f (AffineMap.lineMap x y t)
-    rw [AffineMap.lineMap_apply_module', add_comm]
-  rw [heq]
-  refine (hc.comp_affineMap (AffineMap.lineMap x y)).subset (fun t ht => ?_)
+    ConcaveOn ℝ (Set.Icc 0 1) (fun t : ℝ => f (x + t • (y - x))) := by
+  rw [show (fun t : ℝ => f (x + t • (y - x))) = f ∘ AffineMap.lineMap x y from
+    funext fun t => by rw [Function.comp_apply, AffineMap.lineMap_apply_module', add_comm]]
+  exact (hc.comp_affineMap (AffineMap.lineMap x y)).subset
+    (fun t ht => hc.1.segment_subset hx hy (lineMap_mem_segment ℝ x y ht))
     (convex_Icc _ _)
-  exact hc.1.segment_subset hx hy (lineMap_mem_segment ℝ x y ht)
 
 namespace ConvexOn
 
@@ -70,14 +64,9 @@ the first-order inequality `f x + lineDeriv ℝ f x (y - x) ≤ f y` holds. -/
 theorem add_lineDeriv_le (hc : ConvexOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     (hf : LineDifferentiableAt ℝ f x (y - x)) :
     f x + lineDeriv ℝ f x (y - x) ≤ f y := by
-  -- Restrict to the line through `x` and `y`, then apply the 1D additive form.
-  have hg_conv : ConvexOn ℝ (Set.Icc (0 : ℝ) 1) (fun t => f (x + t • (y - x))) :=
-    hc.lineRestriction hx hy
-  have hg_deriv : HasDerivAt (fun t : ℝ => f (x + t • (y - x))) (lineDeriv ℝ f x (y - x)) 0 :=
-    hf.hasDerivAt
-  have h := ConvexOn.add_hasDerivAt_mul_le hg_conv
-    (Set.left_mem_Icc.mpr zero_le_one) (Set.right_mem_Icc.mpr zero_le_one) zero_lt_one hg_deriv
-  simpa using h
+  simpa using (hc.lineRestriction hx hy).add_hasDerivAt_mul_le
+    (Set.left_mem_Icc.mpr zero_le_one) (Set.right_mem_Icc.mpr zero_le_one)
+    zero_lt_one hf.hasDerivAt
 
 /-- Monotonicity of the directional derivative along the chord: for convex `f`
 line-differentiable at both endpoints in direction `y - x`,
@@ -86,23 +75,9 @@ theorem lineDeriv_sub_apply_nonneg (hc : ConvexOn ℝ s f) (hx : x ∈ s) (hy : 
     (hfx : LineDifferentiableAt ℝ f x (y - x))
     (hfy : LineDifferentiableAt ℝ f y (y - x)) :
     0 ≤ lineDeriv ℝ f y (y - x) - lineDeriv ℝ f x (y - x) := by
-  -- `f x + lineDeriv f x (y - x) ≤ f y` from `add_lineDeriv_le` at `(x, y)`.
-  have h1 : f x + lineDeriv ℝ f x (y - x) ≤ f y :=
-    hc.add_lineDeriv_le hx hy hfx
-  -- For the symmetric bound at `(y, x)`, line-differentiability in direction `x - y`
-  -- is equivalent to line-differentiability in direction `y - x` (smul by `-1`).
-  have hfy' : LineDifferentiableAt ℝ f y (x - y) := by
-    have : (x - y) = (-1 : ℝ) • (y - x) := by rw [neg_one_smul, neg_sub]
-    rw [this]
-    exact hfy.smul (-1)
-  -- `f y + lineDeriv f y (x - y) ≤ f x` from `add_lineDeriv_le` at `(y, x)`.
-  have h2 : f y + lineDeriv ℝ f y (x - y) ≤ f x :=
-    hc.add_lineDeriv_le hy hx hfy'
-  -- Rewrite `lineDeriv f y (x - y) = -lineDeriv f y (y - x)`.
-  have h3 : lineDeriv ℝ f y (x - y) = -lineDeriv ℝ f y (y - x) := by
-    rw [show (x - y) = -(y - x) from (neg_sub y x).symm, lineDeriv_neg]
-  rw [h3] at h2
-  linarith
+  have h2 := hc.add_lineDeriv_le hy hx (neg_sub y _ ▸ neg_one_smul ℝ (y - x) ▸ hfy.smul _)
+  rw [(neg_sub _ _).symm, lineDeriv_neg] at h2
+  linarith [hc.add_lineDeriv_le hx hy hfx]
 
 end ConvexOn
 
@@ -113,14 +88,9 @@ the reverse first-order inequality `f y ≤ f x + lineDeriv ℝ f x (y - x)` hol
 theorem le_add_lineDeriv (hc : ConcaveOn ℝ s f) (hx : x ∈ s) (hy : y ∈ s)
     (hf : LineDifferentiableAt ℝ f x (y - x)) :
     f y ≤ f x + lineDeriv ℝ f x (y - x) := by
-  -- Restrict to the line through `x` and `y`, then apply the 1D additive form for concave.
-  have hg_conc : ConcaveOn ℝ (Set.Icc (0 : ℝ) 1) (fun t => f (x + t • (y - x))) :=
-    hc.lineRestriction hx hy
-  have hg_deriv : HasDerivAt (fun t : ℝ => f (x + t • (y - x))) (lineDeriv ℝ f x (y - x)) 0 :=
-    hf.hasDerivAt
-  have h := ConcaveOn.le_add_hasDerivAt_mul hg_conc
-    (Set.left_mem_Icc.mpr zero_le_one) (Set.right_mem_Icc.mpr zero_le_one) zero_lt_one hg_deriv
-  simpa using h
+  simpa using (hc.lineRestriction hx hy).le_add_hasDerivAt_mul
+    (Set.left_mem_Icc.mpr zero_le_one) (Set.right_mem_Icc.mpr zero_le_one)
+    zero_lt_one hf.hasDerivAt
 
 end ConcaveOn
 
