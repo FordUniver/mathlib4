@@ -56,38 +56,30 @@ private theorem norm_gradient_sub_sq_le_aux (hc : ConvexOn ℝ Set.univ f)
     (hf : Differentiable ℝ f) (hs : LipschitzSmoothWith K f) (hKp : 0 < (K : ℝ)) (x y : F) :
     ‖∇ f y - ∇ f x‖ ^ 2 ≤ 2 * K * (f y - f x - ⟪∇ f x, y - x⟫) := by
   set g := ∇ f y - ∇ f x with hg
-  set u := y - ((1 : ℝ) / K) • g with hu
-  have huy : u - y = -((1 / (K : ℝ)) • g) := by rw [hu]; module
-  have hux : u - x = (y - x) - ((1 / (K : ℝ)) • g) := by rw [hu]; module
-  have h_foc : f x + ⟪∇ f x, u - x⟫ ≤ f u :=
-    hc.add_inner_gradient_le (Set.mem_univ x) (Set.mem_univ u) (hf x)
-  have h_desc : f u ≤ f y + ⟪∇ f y, u - y⟫ + (K : ℝ) / 2 * ‖u - y‖ ^ 2 :=
-    hs.inner_gradient_descent_le hf y u
-  -- Simplify the inner products and norm appearing in h_foc and h_desc
-  have huy_inner : ⟪∇ f y, u - y⟫_ℝ = -(1 / (K : ℝ) * ⟪∇ f y, g⟫_ℝ) := by
-    rw [huy, inner_neg_right, inner_smul_right]
-  have hux_inner : ⟪∇ f x, u - x⟫_ℝ = ⟪∇ f x, y - x⟫_ℝ - 1 / (K : ℝ) * ⟪∇ f x, g⟫_ℝ := by
-    rw [hux, inner_sub_right, inner_smul_right]
-  have huy_norm : (K : ℝ) / 2 * ‖u - y‖ ^ 2 = ‖g‖ ^ 2 / (2 * K) := by
-    rw [huy, norm_neg, norm_smul, Real.norm_eq_abs,
-      abs_of_pos (by positivity : (0 : ℝ) < 1 / K)]
-    field_simp
-  rw [hux_inner] at h_foc
-  rw [huy_inner, huy_norm] at h_desc
-  -- Inner-product identity: (1/K) (⟪∇f y, g⟫ - ⟪∇f x, g⟫) = ‖g‖² / K
-  have h_inner_diff :
-      1 / (K : ℝ) * ⟪∇ f y, g⟫_ℝ - 1 / (K : ℝ) * ⟪∇ f x, g⟫_ℝ = ‖g‖ ^ 2 / K := by
-    rw [← mul_sub, ← inner_sub_left, ← hg, real_inner_self_eq_norm_sq]
-    ring
-  -- ‖g‖²/K = 2 · ‖g‖²/(2K)
-  have h_div_rel : ‖g‖ ^ 2 / (K : ℝ) = 2 * (‖g‖ ^ 2 / (2 * K)) := by field_simp
-  -- Combine: ‖g‖²/(2K) ≤ f y - f x - ⟪∇f x, y - x⟫
-  have h_half : ‖g‖ ^ 2 / (2 * (K : ℝ)) ≤ f y - f x - ⟪∇ f x, y - x⟫_ℝ := by
-    linarith [h_foc, h_desc, h_inner_diff, h_div_rel]
-  -- Multiply by 2K
-  have h_norm_eq : ‖g‖ ^ 2 = 2 * (K : ℝ) * (‖g‖ ^ 2 / (2 * K)) := by field_simp
-  rw [h_norm_eq]
-  exact mul_le_mul_of_nonneg_left h_half (by positivity)
+  -- Combining convex FOC at `(x, u)` with K-smooth descent at `(y, u)` for the step
+  -- `u := y - (1/K) • g`, then substituting the shape of `u - x`, `u - y`, `‖u - y‖²`.
+  have h_chain : f x + ⟪∇ f x, y - x⟫_ℝ - 1 / (K : ℝ) * ⟪∇ f x, g⟫_ℝ ≤
+      f y - 1 / (K : ℝ) * ⟪∇ f y, g⟫_ℝ + ‖g‖ ^ 2 / (2 * K) := by
+    set u := y - ((1 : ℝ) / K) • g with hu
+    have e_uy : u - y = -((1 / (K : ℝ)) • g) := by rw [hu]; module
+    have e_ux : u - x = (y - x) - ((1 / (K : ℝ)) • g) := by rw [hu]; module
+    have e_norm : (K : ℝ) / 2 * ‖u - y‖ ^ 2 = ‖g‖ ^ 2 / (2 * K) := by
+      rw [e_uy, norm_neg, norm_smul, Real.norm_eq_abs,
+        abs_of_pos (by positivity : (0 : ℝ) < 1 / K)]
+      field_simp
+    have h := (hc.add_inner_gradient_le (Set.mem_univ x) (Set.mem_univ u) (hf x)).trans
+      (hs.inner_gradient_descent_le hf y u)
+    rw [e_norm, e_ux, e_uy, inner_sub_right, inner_neg_right, inner_smul_right,
+      inner_smul_right] at h
+    linarith
+  -- Inner-product self identity: `(1/K) · (⟪∇f y, g⟫ - ⟪∇f x, g⟫) = ‖g‖²/K = 2 · ‖g‖²/(2K)`.
+  have h_inner : 1 / (K : ℝ) * ⟪∇ f y, g⟫_ℝ - 1 / (K : ℝ) * ⟪∇ f x, g⟫_ℝ
+      = 2 * (‖g‖ ^ 2 / (2 * K)) := by
+    rw [← mul_sub, ← inner_sub_left, ← hg, real_inner_self_eq_norm_sq]; field_simp
+  calc ‖∇ f y - ∇ f x‖ ^ 2
+      = 2 * (K : ℝ) * (‖g‖ ^ 2 / (2 * K)) := by rw [hg]; field_simp
+    _ ≤ 2 * (K : ℝ) * (f y - f x - ⟪∇ f x, y - x⟫_ℝ) :=
+        mul_le_mul_of_nonneg_left (by linarith [h_chain, h_inner]) (by positivity)
 
 /-- **Baillon-Haddad theorem.** A differentiable convex `K`-smooth function on a Hilbert
 space is `K`-cocoercive.
