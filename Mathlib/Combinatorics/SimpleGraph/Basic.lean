@@ -321,10 +321,14 @@ instance completeAtomicBooleanAlgebra : CompleteAtomicBooleanAlgebra (SimpleGrap
   isGLB_sInf _ := ⟨fun _ hG _ _ hab ↦ hab.1 hG, fun _ hG _ _ hab ↦ ⟨fun _ hH => hG hH hab, hab.ne⟩⟩
   iInf_iSup_eq f := by ext; simp [Classical.skolem]
 
-/-- The complete graph on a type `V` is the simple graph with all pairs of distinct vertices. -/
+/-- The complete graph on `V`, definitionally `(⊤ : SimpleGraph V)`. Prefer this spelling
+in graph-theoretic statements and `⊤` in lattice arguments; bridge with `completeGraph_eq_top`.
+Note that head-position `rw` (e.g. `rw [← top_sup_eq]`) keys on `⊤` and will not fire on a
+`completeGraph V` head. -/
 abbrev completeGraph (V : Type u) : SimpleGraph V := ⊤
 
-/-- The graph with no edges on a given vertex type `V`. -/
+/-- The edgeless graph on `V`, definitionally `(⊥ : SimpleGraph V)`. See `completeGraph` for
+spelling guidance and the head-position `rw` caveat. -/
 abbrev emptyGraph (V : Type u) : SimpleGraph V := ⊥
 
 @[simp]
@@ -335,11 +339,9 @@ theorem top_adj (v w : V) : (⊤ : SimpleGraph V).Adj v w ↔ v ≠ w :=
 theorem bot_adj (v w : V) : (⊥ : SimpleGraph V).Adj v w ↔ False :=
   Iff.rfl
 
-@[simp]
 theorem completeGraph_eq_top (V : Type u) : completeGraph V = ⊤ :=
   rfl
 
-@[simp]
 theorem emptyGraph_eq_bot (V : Type u) : emptyGraph V = ⊥ :=
   rfl
 
