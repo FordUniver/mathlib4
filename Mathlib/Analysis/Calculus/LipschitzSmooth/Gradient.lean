@@ -28,6 +28,8 @@ fderiv-form statement into its inner-product form under that hypothesis.
   identifies `LipschitzWith K (fderiv ℝ f)` with `LipschitzWith K (∇ f)`.
 * `CocoerciveWith.lipschitzWith_gradient` : `K`-cocoercivity of the gradient
   implies its `K`-Lipschitz continuity.
+* `lipschitzSmoothWith_iff_inner_gradient` : characterisation of `K`-smoothness
+  in gradient form under `Differentiable`.
 * `LipschitzSmoothWith.inner_gradient_descent_le` : under `Differentiable ℝ f`,
   the descent inequality in gradient form
   `f y ≤ f x + ⟪∇ f x, y - x⟫ + K / 2 · ‖y - x‖²`.
@@ -74,24 +76,34 @@ theorem CocoerciveWith.lipschitzWith_gradient {K : NNReal} {f : F → ℝ}
 
 /-! ### Inner-product restatements of K-smoothness -/
 
-namespace LipschitzSmoothWith
-
 variable {K : NNReal} {f : F → ℝ}
 
-/-- For a differentiable `K`-smooth `f` on a Hilbert space, the descent inequality in
-gradient form: `f y ≤ f x + ⟪∇ f x, y - x⟫ + K / 2 · ‖y - x‖²`. -/
-theorem inner_gradient_descent_le (h : LipschitzSmoothWith K f) (hf : Differentiable ℝ f)
-    (x y : F) : f y ≤ f x + ⟪∇ f x, y - x⟫ + ↑K / 2 * ‖y - x‖ ^ 2 := by
-  rw [← dist_eq_norm', inner_gradient_left]
-  exact h.fderiv_descent_le hf x y
+/-- Characterisation of `LipschitzSmoothWith` on a Hilbert space in gradient form under
+`Differentiable`. -/
+theorem lipschitzSmoothWith_iff_inner_gradient (hf : Differentiable ℝ f) :
+    LipschitzSmoothWith K f ↔
+      ∀ x y : F, f y ≤ f x + ⟪∇ f x, y - x⟫ + ↑K / 2 * ‖y - x‖ ^ 2 := by
+  rw [lipschitzSmoothWith_iff_fderiv hf]
+  refine forall_congr' fun x => forall_congr' fun y => ?_
+  rw [inner_gradient_left, dist_eq_norm']
 
-/-- For a differentiable `K`-smooth `f` on a Hilbert space,
-`⟪∇ f y - ∇ f x, y - x⟫ ≤ K * ‖y - x‖²` — the classical
-gradient-variation bound in convex analysis. -/
-theorem inner_gradient_sub_le (h : LipschitzSmoothWith K f) (hf : Differentiable ℝ f)
-    (x y : F) : ⟪∇ f y - ∇ f x, y - x⟫ ≤ ↑K * ‖y - x‖ ^ 2 := by
+namespace LipschitzSmoothWith
+
+/-- For a `K`-smooth `f` differentiable at `x` on a Hilbert space, the descent inequality in
+gradient form: `f y ≤ f x + ⟪∇ f x, y - x⟫ + K / 2 · ‖y - x‖²`. -/
+theorem inner_gradient_descent_le (h : LipschitzSmoothWith K f) (x y : F)
+    (hf : DifferentiableAt ℝ f x) :
+    f y ≤ f x + ⟪∇ f x, y - x⟫ + ↑K / 2 * ‖y - x‖ ^ 2 := by
+  rw [inner_gradient_left, ← dist_eq_norm']
+  exact h.fderiv_descent_le x y hf
+
+/-- For a `K`-smooth `f` differentiable at `x` and `y` on a Hilbert space,
+`⟪∇ f y - ∇ f x, y - x⟫ ≤ K * ‖y - x‖²` — the classical gradient-variation bound. -/
+theorem inner_gradient_sub_le (h : LipschitzSmoothWith K f) (x y : F)
+    (hfx : DifferentiableAt ℝ f x) (hfy : DifferentiableAt ℝ f y) :
+    ⟪∇ f y - ∇ f x, y - x⟫ ≤ ↑K * ‖y - x‖ ^ 2 := by
   simp only [← dist_eq_norm', inner_sub_left, inner_gradient_left, ← ContinuousLinearMap.sub_apply]
-  exact h.fderiv_sub_apply_le hf x y
+  exact h.fderiv_sub_apply_le x y hfx hfy
 
 end LipschitzSmoothWith
 

@@ -67,7 +67,7 @@ private theorem norm_gradient_sub_sq_le_aux (hc : ConvexOn ℝ Set.univ f)
           simp only [inner_sub_right, inner_smul_right]; ring
       _ ≤ f u := hc.add_inner_gradient_le (Set.mem_univ x) (Set.mem_univ u) (hf x)
       _ ≤ f y + ⟪∇ f y, u - y⟫_ℝ + K / 2 * ‖u - y‖ ^ 2 :=
-          hs.inner_gradient_descent_le hf y u
+          hs.inner_gradient_descent_le y u (hf y)
       _ = f y - 1 / K * ⟪∇ f y, g⟫_ℝ + ‖g‖ ^ 2 / (2 * K) := by
           rw [show u - y = -((1 / (K : ℝ)) • g) from by rw [hu]; module]
           simp only [inner_neg_right, inner_smul_right, norm_neg, norm_smul,
@@ -98,7 +98,7 @@ theorem cocoerciveWith_of_lipschitzSmoothWith
   · -- K = 0: descent + FOC pinch `f b = f a + ⟪∇f a, b - a⟫` to equality everywhere,
     -- forcing `f` affine and `∇f` constant. Both sides of the cocoercive bound are then 0.
     have h_eq : ∀ a b : F, f b = f a + ⟪∇ f a, b - a⟫_ℝ := fun a b =>
-      le_antisymm (by simpa [hK] using hs.inner_gradient_descent_le hf a b)
+      le_antisymm (by simpa [hK] using hs.inner_gradient_descent_le a b (hf a))
         (hc.add_inner_gradient_le (Set.mem_univ a) (Set.mem_univ b) (hf a))
     have h_grad_eq : ∀ v : F, ⟪∇ f y, v⟫_ℝ = ⟪∇ f x, v⟫_ℝ := fun v => by
       have e1 := h_eq x (y + v)
