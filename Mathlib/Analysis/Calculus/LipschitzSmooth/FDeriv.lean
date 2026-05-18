@@ -68,7 +68,7 @@ canonical `LipschitzSmoothWith` predicate, via `lineDeriv_eq_fderiv` under `Diff
 theorem fderiv_descent_le (h : LipschitzSmoothWith K f)
     (hf : Differentiable ℝ f) (x y : F) :
     f y ≤ f x + (fderiv ℝ f x) (y - x) + ↑K / 2 * (dist x y) ^ 2 :=
-  (hf x).lineDeriv_eq_fderiv ▸ h x y
+  (hf x).lineDeriv_eq_fderiv ▸ h.lineDeriv_descent_le x y
 
 /-- For a differentiable `K`-smooth `f`, the variation of the Fréchet derivative satisfies
 `(fderiv ℝ f y - fderiv ℝ f x) (y - x) ≤ K · (dist x y)²`. The fderiv restatement of
@@ -119,7 +119,8 @@ the Fréchet derivative, implies `K`-smoothness. The proof integrates the pointw
 `K · dist x z · dist x y` along the segment from `x` to `y` using FTC. -/
 theorem LipschitzSmoothOnSegmentWith.lipschitzSmoothWith
     (hptwise : LipschitzSmoothOnSegmentWith K f) (hf : Differentiable ℝ f)
-    (hcont : Continuous (fderiv ℝ f)) : LipschitzSmoothWith K f := fun x y =>
+    (hcont : Continuous (fderiv ℝ f)) : LipschitzSmoothWith K f := by
+  refine lipschitzSmoothWith_iff_lineDeriv.mpr fun x y => ?_
   have := calc f y - f x - lineDeriv ℝ f x (y - x)
     _ = f y - f x - (fderiv ℝ f x) (y - x) := by rw [(hf x).lineDeriv_eq_fderiv]
     _ = (∫ᶜ z in .segment x y, fderiv ℝ f z) - ∫ᶜ _ in .segment x y, fderiv ℝ f x := by
@@ -128,7 +129,7 @@ theorem LipschitzSmoothOnSegmentWith.lipschitzSmoothWith
           (curveIntegral_fun_sub (hcont.curveIntegrable_segment x y)
             (curveIntegrable_segment_const _ x y)).symm
     _ ≤ ↑K / 2 * dist x y ^ 2 := hptwise.curveIntegral_le hcont x y
-  by linarith
+  linarith
 
 /-- **Descent lemma.** If `f` is differentiable and its Fréchet derivative is
 `K`-Lipschitz, then `f` is `K`-smooth (without convexity assumption). -/
