@@ -29,14 +29,12 @@ fundamental theorem of calculus along a line segment, expressed using
 ## Main results
 
 * `lipschitzSmoothWith_iff_fderiv` — characterisation in Fréchet form under `Differentiable`.
-* `LipschitzSmoothWith.fderiv_descent_le` — the descent inequality in Fréchet form.
-* `LipschitzSmoothWith.fderiv_apply_sub_le` — variance bound on the Fréchet derivative.
-* `LipschitzSmoothWith.fderiv_sub_apply_le` — function-subtraction restatement.
+* `LipschitzSmoothWith.{fderiv_descent_le, fderiv_apply_sub_le, fderiv_sub_apply_le}` —
+  the descent inequality and the variance bound on the Fréchet derivative.
 * `LipschitzSmoothOnSegmentWith.of_lipschitzWith_fderiv` — a `K`-Lipschitz Fréchet
   derivative implies the segment-pointwise smoothness bound.
-* `LipschitzSmoothOnSegmentWith.lipschitzSmoothWith` — under `Differentiable ℝ f` and
-  continuity of `fderiv ℝ f`, the segment-pointwise bound integrates to `K`-smoothness
-  via the fundamental theorem of calculus.
+* `LipschitzSmoothOnSegmentWith.lipschitzSmoothWith` — the segment-pointwise bound
+  integrates to `K`-smoothness via FTC (under `Differentiable` and continuous `fderiv`).
 * `Differentiable.lipschitzSmoothWith_of_lipschitzWith` — descent lemma: differentiability
   plus a `K`-Lipschitz Fréchet derivative implies `K`-smoothness.
 -/

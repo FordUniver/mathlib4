@@ -30,8 +30,8 @@ fderiv-form statement into its inner-product form under that hypothesis.
   its `K`-Lipschitz continuity.
 * `lipschitzSmoothWith_iff_inner_gradient` — characterisation in gradient form under
   `Differentiable`.
-* `LipschitzSmoothWith.inner_gradient_descent_le` — the descent inequality in gradient form.
-* `LipschitzSmoothWith.inner_gradient_sub_le` — variance bound on the gradient.
+* `LipschitzSmoothWith.{inner_gradient_descent_le, inner_gradient_sub_le}` — the descent
+  inequality and the variance bound on the gradient.
 * `Differentiable.lipschitzSmoothWith_of_lipschitzWith_gradient` — descent lemma in
   Hilbert form: a `K`-Lipschitz gradient implies `K`-smoothness.
 -/
