@@ -24,19 +24,16 @@ fderiv-form statement into its inner-product form under that hypothesis.
 
 ## Main results
 
-* `lipschitzWith_fderiv_iff_lipschitzWith_gradient` : the Riesz isomorphism
-  identifies `LipschitzWith K (fderiv ℝ f)` with `LipschitzWith K (∇ f)`.
-* `CocoerciveWith.lipschitzWith_gradient` : `K`-cocoercivity of the gradient
-  implies its `K`-Lipschitz continuity.
-* `lipschitzSmoothWith_iff_inner_gradient` : characterisation of `K`-smoothness
-  in gradient form under `Differentiable`.
-* `LipschitzSmoothWith.inner_gradient_descent_le` : under `Differentiable ℝ f`,
-  the descent inequality in gradient form
-  `f y ≤ f x + ⟪∇ f x, y - x⟫ + K / 2 · ‖y - x‖²`.
-* `LipschitzSmoothWith.inner_gradient_sub_le` : the classical
-  gradient-variation bound `⟪∇ f y - ∇ f x, y - x⟫ ≤ K * ‖y - x‖²`.
-* `Differentiable.lipschitzSmoothWith_of_lipschitzWith_gradient` : descent
-  lemma in Hilbert form — a `K`-Lipschitz gradient implies `K`-smoothness.
+* `lipschitzWith_fderiv_iff_lipschitzWith_gradient` — the Riesz isomorphism identifies
+  `LipschitzWith K (fderiv ℝ f)` with `LipschitzWith K (∇ f)`.
+* `CocoerciveWith.lipschitzWith_gradient` — `K`-cocoercivity of the gradient implies
+  its `K`-Lipschitz continuity.
+* `lipschitzSmoothWith_iff_inner_gradient` — characterisation in gradient form under
+  `Differentiable`.
+* `LipschitzSmoothWith.inner_gradient_descent_le` — the descent inequality in gradient form.
+* `LipschitzSmoothWith.inner_gradient_sub_le` — variance bound on the gradient.
+* `Differentiable.lipschitzSmoothWith_of_lipschitzWith_gradient` — descent lemma in
+  Hilbert form: a `K`-Lipschitz gradient implies `K`-smoothness.
 -/
 
 public section
