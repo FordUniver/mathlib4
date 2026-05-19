@@ -103,4 +103,38 @@ theorem cocoerciveWith_of_lipschitzSmoothWith
     nlinarith [norm_gradient_sub_sq_le_aux hc hf hs hKp x y,
       norm_gradient_sub_sq_le_aux hc hf hs hKp y x, h_sym, h_inner, K.coe_nonneg]
 
+/-- For a differentiable convex function on a Hilbert space, `K`-smoothness is equivalent
+to `K`-cocoercivity. The forward direction is the Baillon-Haddad theorem; the backward
+direction goes via `K`-Lipschitz gradient and the descent lemma, no convexity needed. -/
+theorem lipschitzSmoothWith_iff_cocoerciveWith
+    (hc : ConvexOn ℝ Set.univ f) (hf : Differentiable ℝ f) :
+    LipschitzSmoothWith K f ↔ CocoerciveWith K f :=
+  ⟨hc.cocoerciveWith_of_lipschitzSmoothWith hf,
+    fun h => hf.lipschitzSmoothWith_of_lipschitzWith_gradient h.lipschitzWith_gradient⟩
+
+/-- For a differentiable convex function on a Hilbert space, `K`-smoothness is equivalent
+to `K`-Lipschitz gradient. Forward: K-smooth → cocoercive (Baillon-Haddad) → Lipschitz
+gradient. Backward: the descent lemma in Hilbert form. -/
+theorem lipschitzSmoothWith_iff_lipschitzWith_gradient
+    (hc : ConvexOn ℝ Set.univ f) (hf : Differentiable ℝ f) :
+    LipschitzSmoothWith K f ↔ LipschitzWith K (∇ f) :=
+  ⟨fun hs => (hc.cocoerciveWith_of_lipschitzSmoothWith hf hs).lipschitzWith_gradient,
+    hf.lipschitzSmoothWith_of_lipschitzWith_gradient⟩
+
+/-- For a differentiable convex function on a Hilbert space, `K`-smoothness is equivalent
+to a `K`-Lipschitz Fréchet derivative. -/
+theorem lipschitzSmoothWith_iff_lipschitzWith_fderiv
+    (hc : ConvexOn ℝ Set.univ f) (hf : Differentiable ℝ f) :
+    LipschitzSmoothWith K f ↔ LipschitzWith K (fderiv ℝ f) :=
+  (hc.lipschitzSmoothWith_iff_lipschitzWith_gradient hf).trans
+    lipschitzWith_fderiv_iff_lipschitzWith_gradient.symm
+
+/-- **Baillon-Haddad theorem** (`iff` form): for a differentiable convex function on a Hilbert
+space, `K`-Lipschitz gradient is equivalent to `K`-cocoercivity. -/
+theorem cocoerciveWith_iff_lipschitzWith_gradient
+    (hc : ConvexOn ℝ Set.univ f) (hf : Differentiable ℝ f) :
+    CocoerciveWith K f ↔ LipschitzWith K (∇ f) :=
+  (hc.lipschitzSmoothWith_iff_cocoerciveWith hf).symm.trans
+    (hc.lipschitzSmoothWith_iff_lipschitzWith_gradient hf)
+
 end ConvexOn
