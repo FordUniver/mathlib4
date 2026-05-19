@@ -130,8 +130,7 @@ theorem lipschitzSmoothWith_affine (ℓ : F →L[ℝ] ℝ) (c : ℝ) :
   lipschitzSmoothWith_iff_lineDeriv.mpr fun x y => by
     have h : HasFDerivAt (fun y : F => ℓ y + c) ℓ x := ℓ.hasFDerivAt.add_const c
     rw [(h.hasLineDerivAt (y - x)).lineDeriv, map_sub]
-    push_cast
-    linarith
+    simp
 
 /-- A constant function is `0`-smooth. Special case of `lipschitzSmoothWith_affine` with `ℓ = 0`. -/
 theorem lipschitzSmoothWith_const (c : ℝ) : LipschitzSmoothWith (0 : NNReal) (fun _ : F => c) := by
