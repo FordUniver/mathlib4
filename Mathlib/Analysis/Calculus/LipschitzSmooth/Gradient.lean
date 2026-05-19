@@ -14,20 +14,33 @@ public import Mathlib.Analysis.Calculus.LipschitzSmooth.FDeriv
 On a Hilbert space `F`, the `LipschitzSmoothWith` predicate admits a gradient-form
 characterisation. For differentiable `f`, `fderiv ℝ f x (y - x) = ⟪∇ f x, y - x⟫`
 via Riesz representation (`inner_gradient_left`), and the descent inequality becomes
-`f y ≤ f x + ⟪∇ f x, y - x⟫ + K/2 · ‖y - x‖²`. The descent lemma (converse direction)
-and the Baillon-Haddad equivalence with cocoercivity are deferred to follow-ups.
+`f y ≤ f x + ⟪∇ f x, y - x⟫ + K/2 · ‖y - x‖²`.
 
-This file also defines the **`CocoerciveWith K f`** predicate (the conclusion of the
-Baillon-Haddad theorem) and the elementary direction `K`-cocoercive ⟹ `K`-Lipschitz
-gradient.
+This file also packages the Riesz isomorphism for Lipschitz constants of the derivative,
+the descent lemma in Hilbert form (`K`-Lipschitz gradient ⟹ `K`-smooth), and the
+**`CocoerciveWith K f`** predicate (the conclusion of the Baillon-Haddad theorem)
+together with the elementary direction `K`-cocoercive ⟹ `K`-Lipschitz gradient.
 -/
 
 public section
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
-variable {K : NNReal} {f : F → ℝ}
 
+open InnerProductSpace
 open scoped Gradient RealInnerProductSpace
+
+/-! ### Riesz isomorphism -/
+
+/-- The Riesz isomorphism identifies the Lipschitz constant of the Fréchet derivative with
+that of the gradient: `LipschitzWith K (fderiv ℝ f) ↔ LipschitzWith K (∇ f)`. Unconditional —
+the gradient is *defined* via Riesz from the fderiv, and Riesz is an isometry. -/
+theorem lipschitzWith_fderiv_iff_lipschitzWith_gradient {K : NNReal} {f : F → ℝ} :
+    LipschitzWith K (fderiv ℝ f) ↔ LipschitzWith K (∇ f) :=
+  toDual_comp_gradient (𝕜 := ℝ) (f := f) ▸ (toDual ℝ F).isometry.lipschitzWith_iff K
+
+/-! ### Inner-product restatements of K-smoothness -/
+
+variable {K : NNReal} {f : F → ℝ}
 
 theorem lipschitzSmoothWith_iff_inner_gradient (hf : Differentiable ℝ f) :
     LipschitzSmoothWith K f ↔ ∀ x y : F, f y ≤ f x + ⟪∇ f x, y - x⟫ + ↑K / 2 * ‖y - x‖ ^ 2 := by
@@ -50,6 +63,14 @@ theorem inner_gradient_sub_le (h : LipschitzSmoothWith K f) (x y : F)
   exact h.fderiv_sub_apply_le x y hfx hfy
 
 end LipschitzSmoothWith
+
+/-! ### Descent lemma (Hilbert form) -/
+
+/-- **Descent lemma (Hilbert form).** If `f : F → ℝ` is differentiable on a Hilbert space
+and its gradient `∇ f` is `K`-Lipschitz, then `f` is `K`-smooth. -/
+theorem Differentiable.lipschitzSmoothWith_of_lipschitzWith_gradient
+    (hf : Differentiable ℝ f) (hL : LipschitzWith K (∇ f)) : LipschitzSmoothWith K f :=
+  hf.lipschitzSmoothWith_of_lipschitzWith (lipschitzWith_fderiv_iff_lipschitzWith_gradient.mpr hL)
 
 /-! ### Cocoercivity -/
 
