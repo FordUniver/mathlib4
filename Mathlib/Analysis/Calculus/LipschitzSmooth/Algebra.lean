@@ -27,6 +27,13 @@ variable {F F' : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
   [NormedAddCommGroup F'] [NormedSpace ℝ F']
 variable {K K₁ K₂ : NNReal} {f f₁ f₂ : F → ℝ}
 
+/-- A continuous affine map `A : F →ᴬ[ℝ] ℝ` is `0`-smooth. Bundled form of
+`lipschitzSmoothWith_affine` (which splits into linear part + constant). -/
+theorem lipschitzSmoothWith_continuousAffineMap (A : F →ᴬ[ℝ] ℝ) :
+    LipschitzSmoothWith (0 : NNReal) (A : F → ℝ) := by
+  rw [show (A : F → ℝ) = ⇑A.contLinear + Function.const F (A 0) from A.decomp]
+  exact lipschitzSmoothWith_affine A.contLinear (A 0)
+
 namespace LipschitzSmoothWith
 
 /-- Sum of `K₁`-smooth and `K₂`-smooth (differentiable) is `(K₁ + K₂)`-smooth. -/

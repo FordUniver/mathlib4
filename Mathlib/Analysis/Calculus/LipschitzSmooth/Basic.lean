@@ -124,13 +124,6 @@ end LipschitzSmoothWith
 
 /-! ### Algebraic preservation -/
 
-/-- A constant function is `0`-smooth. -/
-theorem lipschitzSmoothWith_const (c : ℝ) : LipschitzSmoothWith (0 : NNReal) (fun _ : F => c) :=
-  lipschitzSmoothWith_iff_lineDeriv.mpr fun x y => by
-    have h : HasFDerivAt (fun _ : F => c) (0 : F →L[ℝ] ℝ) x := hasFDerivAt_const c x
-    rw [(h.hasLineDerivAt (y - x)).lineDeriv]
-    simp
-
 /-- An affine function `y ↦ ℓ y + c` is `0`-smooth. -/
 theorem lipschitzSmoothWith_affine (ℓ : F →L[ℝ] ℝ) (c : ℝ) :
     LipschitzSmoothWith (0 : NNReal) (fun y => ℓ y + c) :=
@@ -139,4 +132,8 @@ theorem lipschitzSmoothWith_affine (ℓ : F →L[ℝ] ℝ) (c : ℝ) :
     rw [(h.hasLineDerivAt (y - x)).lineDeriv, map_sub]
     push_cast
     linarith
+
+/-- A constant function is `0`-smooth. Special case of `lipschitzSmoothWith_affine` with `ℓ = 0`. -/
+theorem lipschitzSmoothWith_const (c : ℝ) : LipschitzSmoothWith (0 : NNReal) (fun _ : F => c) := by
+  simpa using lipschitzSmoothWith_affine (0 : F →L[ℝ] ℝ) c
 
