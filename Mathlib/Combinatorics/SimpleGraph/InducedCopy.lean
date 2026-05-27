@@ -139,6 +139,51 @@ providing the converse direction to `Embedding.toSubgraph` / `Embedding.toSubgra
 @[simp] lemma Copy.toEmbeddingOfIsInduced_apply (f : Copy G H) (hInd : f.toSubgraph.IsInduced)
     (v : V) : f.toEmbeddingOfIsInduced hInd v = f v := rfl
 
+/-! ### Induced shape of a copy
+
+The pullback `H.comap f.toEmbedding` records the induced adjacency on the image of a copy
+`f : Copy G H`, transported back to `V`. It is always a supergraph of `G`, and pinning it
+down to a specific supergraph `G'` promotes the copy to an embedding `G' ↪g H`. -/
+
+namespace Copy
+
+variable {G G' : SimpleGraph V} {H : SimpleGraph W}
+
+/-- The pullback of the host graph along the underlying injection of a copy. -/
+def inducedShape (f : Copy G H) : SimpleGraph V :=
+  H.comap f.toEmbedding
+
+@[simp] lemma inducedShape_adj (f : Copy G H) {a b : V} :
+    f.inducedShape.Adj a b ↔ H.Adj (f a) (f b) := Iff.rfl
+
+lemma le_inducedShape (f : Copy G H) : G ≤ f.inducedShape :=
+  fun _ _ => f.toHom.map_adj
+
+/-- A copy with induced shape `G'` promotes to a graph embedding `G' ↪g H`. -/
+@[expose] def toEmbeddingOfInducedShapeEq (f : Copy G H) (h : f.inducedShape = G') :
+    G' ↪g H where
+  toFun := f
+  inj' := f.injective
+  map_rel_iff' {a b} := by
+    change H.Adj (f a) (f b) ↔ G'.Adj a b
+    rw [← h, inducedShape_adj]
+
+@[simp] lemma toEmbeddingOfInducedShapeEq_apply (f : Copy G H) (h : f.inducedShape = G')
+    (v : V) : f.toEmbeddingOfInducedShapeEq h v = f v := rfl
+
+/-- The fiber of `inducedShape` over a supergraph `G' ≥ G` is canonically `Embedding G' H`. -/
+def fiberInducedShapeEquiv (hGG' : G ≤ G') :
+    {f : Copy G H // f.inducedShape = G'} ≃ Embedding G' H where
+  toFun f := f.val.toEmbeddingOfInducedShapeEq f.prop
+  invFun e := ⟨e.toCopy.comp (Copy.ofLE G G' hGG'), by ext a b; simp [inducedShape]⟩
+  left_inv f := by apply Subtype.ext; ext v; simp
+  right_inv e := by apply DFunLike.ext; intro v; simp
+
+end Copy
+
+@[simp] lemma Embedding.inducedShape_toCopy (e : Embedding G H) : e.toCopy.inducedShape = G := by
+  ext a b; rw [Copy.inducedShape_adj]; exact e.map_rel_iff
+
 /-!
 ### Induced containment
 
