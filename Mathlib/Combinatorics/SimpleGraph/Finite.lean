@@ -146,6 +146,16 @@ theorem card_edgeFinset_le_card_choose_two : #G.edgeFinset ≤ (Fintype.card V).
 
 end EdgeFinset
 
+/-- A graph of order `n` has size at most `n.choose 2`. -/
+theorem size_le_order_choose_two [Finite V] : G.size ≤ G.order.choose 2 := by
+  classical
+  have : Fintype V := Fintype.ofFinite V
+  have : Fintype G.edgeSet := Fintype.ofFinite _
+  rw [size_eq_natCard_edgeSet, order_eq_natCard,
+    Nat.card_eq_fintype_card (α := V), Nat.card_eq_fintype_card (α := G.edgeSet),
+    ← edgeFinset_card]
+  exact card_edgeFinset_le_card_choose_two
+
 section FiniteAt
 
 /-!
@@ -309,6 +319,11 @@ lemma degree_le_of_le {H : SimpleGraph V} [Fintype (H.neighborSet v)] (hle : G �
 theorem degree_lt_card_verts [Fintype V] [DecidableRel G.Adj] (v : V) :
     G.degree v < Fintype.card V :=
   Finset.card_lt_univ_of_notMem <| G.notMem_neighborFinset_self v
+
+theorem degree_le_order_sub_one [Fintype V] [DecidableRel G.Adj] (v : V) :
+    G.degree v ≤ G.order - 1 := by
+  rw [order_eq_natCard, Nat.card_eq_fintype_card]
+  exact Nat.le_sub_one_of_lt (G.degree_lt_card_verts v)
 
 end FiniteAt
 
