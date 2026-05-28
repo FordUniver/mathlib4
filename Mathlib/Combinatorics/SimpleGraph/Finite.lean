@@ -557,10 +557,12 @@ namespace Iso
 
 variable {G} {W : Type*} {G' : SimpleGraph W}
 
-theorem card_edgeFinset_eq (f : G ≃g G') [Fintype G.edgeSet] [Fintype G'.edgeSet] :
-    #G.edgeFinset = #G'.edgeFinset := by
+theorem size_eq (f : G ≃g G') [Fintype G.edgeSet] [Fintype G'.edgeSet] :
+    G.size = G'.size := by
   apply Finset.card_eq_of_equiv
   simpa using f.mapEdgeSet
+
+@[deprecated (since := "2026-05-28")] alias card_edgeFinset_eq := size_eq
 
 @[simp] theorem degree_eq (f : G ≃g G') (x : V)
     [Fintype ↑(G.neighborSet x)] [Fintype ↑(G'.neighborSet (f x))] :
