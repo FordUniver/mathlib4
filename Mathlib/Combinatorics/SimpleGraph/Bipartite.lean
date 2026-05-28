@@ -544,7 +544,7 @@ theorem bipartiteDoubleCover_le : G.bipartiteDoubleCover ≤ completeBipartiteGr
 /-- The bipartite double cover of `G` has twice the number of edges as `G`. -/
 theorem size_bipartiteDoubleCover [Fintype V] [DecidableRel G.Adj] :
     G.bipartiteDoubleCover.size = 2 * G.size := by
-  rw [two_mul_card_edgeFinset, eq_comm]
+  rw [two_mul_size, eq_comm]
   apply card_bij (fun (v, w) _ ↦ s(.inl v, .inr w))
     (fun _ h ↦ by simpa using h) (by grind) (fun e he ↦ ?_)
   induction e with | _ v w

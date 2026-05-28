@@ -168,8 +168,8 @@ theorem IsTrail.count_edges_eq_one [DecidableEq V] {u v : V} {p : G.Walk u v} (h
     {e : Sym2 V} (he : e ∈ p.edges) : p.edges.count e = 1 :=
   List.count_eq_one_of_mem h.edges_nodup he
 
-theorem IsTrail.length_le_card_edgeFinset [Fintype G.edgeSet] {u v : V}
-    {w : G.Walk u v} (h : w.IsTrail) : w.length ≤ G.edgeFinset.card := by
+theorem IsTrail.length_le_size [Fintype G.edgeSet] {u v : V}
+    {w : G.Walk u v} (h : w.IsTrail) : w.length ≤ G.size := by
   classical
   let edges := w.edges.toFinset
   have : edges.card = w.length := length_edges _ ▸ List.toFinset_card_of_nodup h.edges_nodup
@@ -180,6 +180,9 @@ theorem IsTrail.length_le_card_edgeFinset [Fintype G.edgeSet] {u v : V}
     apply w.edges_subset_edgeSet
     simpa [edges] using h
   exact Finset.card_le_card this
+
+@[deprecated (since := "2026-05-28")]
+alias IsTrail.length_le_card_edgeFinset := IsTrail.length_le_size
 
 theorem IsPath.nil {u : V} : (nil : G.Walk u u).IsPath := by constructor <;> simp
 
@@ -350,7 +353,7 @@ lemma exists_isTrail_forall_isTrail_length_le_length (G : SimpleGraph V) [N : No
   have := Fintype.ofFinite G.edgeSet
   let s := {n | ∃ (u v : V) (p : G.Walk u v), p.IsTrail ∧ p.length = n}
   have : s.Finite := Set.Finite.subset (Set.finite_le_nat G.edgeFinset.card)
-    fun n ⟨_, _, _, hp, hn⟩ ↦ hn ▸ hp.length_le_card_edgeFinset
+    fun n ⟨_, _, _, hp, hn⟩ ↦ hn ▸ hp.length_le_size
   obtain ⟨x⟩ := N
   obtain ⟨_, ⟨⟨u, v, p, hp, _⟩, hn⟩⟩ := this.exists_maximal ⟨0, ⟨x, x, Walk.nil, by simp⟩⟩
   refine ⟨u, v, p, hp, fun u' v' p' hp' ↦ ?_⟩
@@ -365,7 +368,7 @@ lemma exists_isPath_forall_isPath_length_le_length (G : SimpleGraph V) [N : None
   have := Fintype.ofFinite G.edgeSet
   let s := {n | ∃ (u v : V) (p : G.Walk u v), p.IsPath ∧ p.length = n}
   have : s.Finite := Set.Finite.subset (Set.finite_le_nat G.edgeFinset.card)
-    fun n ⟨_, _, _, hp, hn⟩ ↦ hn ▸ hp.isTrail.length_le_card_edgeFinset
+    fun n ⟨_, _, _, hp, hn⟩ ↦ hn ▸ hp.isTrail.length_le_size
   obtain ⟨x⟩ := N
   obtain ⟨_, ⟨⟨u, v, p, hp, _⟩, hn⟩⟩ := this.exists_maximal ⟨0, ⟨x, x, Walk.nil, by simp⟩⟩
   refine ⟨u, v, p, hp, fun u' v' p' hp' ↦ ?_⟩

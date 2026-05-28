@@ -640,12 +640,13 @@ noncomputable instance killCopies.edgeSet.instFintype : Fintype (G.killCopies H)
 
 /-- Removing an edge from `H` for each subgraph isomorphic to `G` means that the number of edges
 we've removed is at most the number of copies of `G` in `H`. -/
-lemma le_card_edgeFinset_killCopies [Fintype V] :
-    #G.edgeFinset - G.copyCount H ≤ #(G.killCopies H).edgeFinset := by
+lemma le_size_killCopies [Fintype V] :
+    G.size - G.copyCount H ≤ (G.killCopies H).size := by
   classical
   obtain rfl | hH := eq_or_ne H ⊥
-  · simp [← card_edgeSet]
+  · simp [size, ← card_edgeSet]
   let f (G' : {G' : G.Subgraph // Nonempty (H ≃g G'.coe)}) := (aux hH G'.2).some
+  unfold size
   calc
     _ = #G.edgeFinset - card {G' : G.Subgraph // Nonempty (H ≃g G'.coe)} := ?_
     _ ≤ #G.edgeFinset - #(univ.image f) := Nat.sub_le_sub_left card_image_le _
@@ -659,11 +660,17 @@ lemma le_card_edgeFinset_killCopies [Fintype V] :
   induction e using Sym2.inductionOn with | hf v w
   simp [mem_edgeSet, killCopies_of_ne_bot hH, f, eq_comm]
 
+@[deprecated (since := "2026-05-28")]
+alias le_card_edgeFinset_killCopies := le_size_killCopies
+
 /-- Removing an edge from `H` for each subgraph isomorphic to `G` means that the number of edges
 we've removed is at most the number of copies of `G` in `H`. -/
-lemma le_card_edgeFinset_killCopies_add_copyCount [Fintype V] :
-    #G.edgeFinset ≤ #(G.killCopies H).edgeFinset + G.copyCount H :=
-  tsub_le_iff_right.1 le_card_edgeFinset_killCopies
+lemma le_size_killCopies_add_copyCount [Fintype V] :
+    G.size ≤ (G.killCopies H).size + G.copyCount H :=
+  tsub_le_iff_right.1 le_size_killCopies
+
+@[deprecated (since := "2026-05-28")]
+alias le_card_edgeFinset_killCopies_add_copyCount := le_size_killCopies_add_copyCount
 
 /-!
 #### Killing induced copies

@@ -102,10 +102,12 @@ more specifically refer to `SimpleGraph.even_card_odd_degree_vertices`. -/
 theorem sum_degrees_eq_twice_card_edges : ∑ v, G.degree v = 2 * G.size :=
   G.dart_card_eq_sum_degrees.symm.trans G.dart_card_eq_twice_card_edges
 
-lemma two_mul_card_edgeFinset : 2 * G.size = #(univ.filter fun (x, y) ↦ G.Adj x y) := by
+lemma two_mul_size : 2 * G.size = #(univ.filter fun (x, y) ↦ G.Adj x y) := by
   rw [← dart_card_eq_twice_card_edges, ← card_univ]
   refine card_bij' (fun d _ ↦ (d.fst, d.snd)) (fun xy h ↦ ⟨xy, (mem_filter.1 h).2⟩) ?_ ?_ ?_ ?_
     <;> simp
+
+@[deprecated (since := "2026-05-28")] alias two_mul_card_edgeFinset := two_mul_size
 
 /-- The degree-sum formula only counting over the vertices that form edges.
 
