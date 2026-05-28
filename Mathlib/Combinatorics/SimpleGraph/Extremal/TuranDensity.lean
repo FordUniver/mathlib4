@@ -120,9 +120,9 @@ theorem isEquivalent_extremalNumber {H : SimpleGraph W} (h : turanDensity H ≠ 
 
 /-- Simple graphs on `n` vertices having at least `(turanDensity H + o(1)) * n ^ 2` edges contain
 `H`, for sufficiently large `n`. -/
-theorem eventually_isContained_of_card_edgeFinset (H : SimpleGraph W) {ε : ℝ} (hε_pos : 0 < ε) :
+theorem eventually_isContained_of_size (H : SimpleGraph W) {ε : ℝ} (hε_pos : 0 < ε) :
     ∀ᶠ n in atTop, ∀ {G : SimpleGraph (Fin n)} [DecidableRel G.Adj],
-      #G.edgeFinset ≥ (turanDensity H + ε) * n.choose 2 → H ⊑ G := by
+      G.size ≥ (turanDensity H + ε) * n.choose 2 → H ⊑ G := by
   have hπ := (turanDensity_eq_csInf H).ge
   rw [eventually_atTop]
   contrapose! hπ with h
@@ -152,7 +152,7 @@ Note that this value is only defined for positive `ε` and `turanDensityConst H 
 positive `ε`. -/
 noncomputable abbrev turanDensityConst (H : SimpleGraph W) (ε : ℝ) :=
   if h : ε > 0 then
-    Nat.find <| eventually_atTop.mp <| eventually_isContained_of_card_edgeFinset H h
+    Nat.find <| eventually_atTop.mp <| eventually_isContained_of_size H h
   else 0
 
 open Classical in
@@ -163,7 +163,13 @@ theorem isContained_of_size (H : SimpleGraph W) {ε : ℝ} (hε_pos : 0 < ε)
     (G : SimpleGraph V) [DecidableRel G.Adj] :
     G.size ≥ (turanDensity H + ε) * (card V).choose 2 → H ⊑ G := by
   rw [(G.overFinIso rfl).size_eq, isContained_congr Iso.refl (G.overFinIso rfl)]
-  apply Nat.find_spec <| eventually_atTop.mp <| eventually_isContained_of_card_edgeFinset H hε_pos
+  apply Nat.find_spec <| eventually_atTop.mp <| eventually_isContained_of_size H hε_pos
   simpa only [turanDensityConst, hε_pos, ↓reduceDIte] using h_verts
+
+@[deprecated (since := "2026-05-28")]
+alias eventually_isContained_of_card_edgeFinset := eventually_isContained_of_size
+
+@[deprecated (since := "2026-05-28")]
+alias isContained_of_card_edgeFinset := isContained_of_size
 
 end SimpleGraph

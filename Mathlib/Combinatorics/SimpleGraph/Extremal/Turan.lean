@@ -317,11 +317,15 @@ theorem extremalNumber_top :
 
 This is **Turán's theorem** restated in terms of the extremal numbers of `⊤`.
 See `SimpleGraph.isTuranMaximal_iff_nonempty_iso_turanGraph`. -/
-theorem card_edgeFinset_eq_extremalNumber_top_iff_nonempty_iso_turanGraph :
-    (⊤ : SimpleGraph α).Free G ∧ #G.edgeFinset = extremalNumber (card V) (⊤ : SimpleGraph α)
+theorem size_eq_extremalNumber_top_iff_nonempty_iso_turanGraph :
+    (⊤ : SimpleGraph α).Free G ∧ G.size = extremalNumber (card V) (⊤ : SimpleGraph α)
       ↔ Nonempty (G ≃g turanGraph (card V) (card α - 1)) := by
   rw [← isTuranMaximal_iff_nonempty_iso_turanGraph (Nat.sub_pos_iff_lt.mpr one_lt_card),
     ← isExtremal_top_free_iff_isTuranMaximal, isExtremal_free_iff]
+
+@[deprecated (since := "2026-05-28")]
+alias card_edgeFinset_eq_extremalNumber_top_iff_nonempty_iso_turanGraph :=
+  size_eq_extremalNumber_top_iff_nonempty_iso_turanGraph
 
 /-! ### Number of edges in the Turán graph -/
 
@@ -419,9 +423,9 @@ theorem mul_size_turanGraph_le :
   rw [Nat.sub_one_mul, Nat.sub_one_mul, mul_comm]
   exact Nat.sub_le_sub_left (Nat.mod_lt _ hr).le _
 
-theorem CliqueFree.card_edgeFinset_le (cf : G.CliqueFree (r + 1)) :
+theorem CliqueFree.size_le (cf : G.CliqueFree (r + 1)) :
     let n := Fintype.card V;
-    #G.edgeFinset ≤ (n ^ 2 - (n % r) ^ 2) * (r - 1) / (2 * r) + (n % r).choose 2 := by
+    G.size ≤ (n ^ 2 - (n % r) ^ 2) * (r - 1) / (2 * r) + (n % r).choose 2 := by
   rcases r.eq_zero_or_pos with rfl | hr
   · rw [cliqueFree_one, ← Fintype.card_eq_zero_iff] at cf
     simp_rw [zero_tsub, mul_zero, Nat.mod_zero, Nat.div_zero, zero_add]
@@ -430,5 +434,7 @@ theorem CliqueFree.card_edgeFinset_le (cf : G.CliqueFree (r + 1)) :
     convert! maxH.2 cf
     rw [((isTuranMaximal_iff_nonempty_iso_turanGraph hr).mp maxH).some.size_eq,
       size_turanGraph]
+
+@[deprecated (since := "2026-05-28")] alias CliqueFree.card_edgeFinset_le := CliqueFree.size_le
 
 end SimpleGraph

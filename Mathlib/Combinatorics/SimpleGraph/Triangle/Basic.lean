@@ -143,8 +143,10 @@ instance EdgeDisjointTriangles.instDecidable : Decidable G.EdgeDisjointTriangles
 instance LocallyLinear.instDecidable : Decidable G.LocallyLinear :=
   inferInstanceAs (Decidable (_ ∧ _))
 
-lemma EdgeDisjointTriangles.card_edgeFinset_le (hG : G.EdgeDisjointTriangles) :
-    3 * #(G.cliqueFinset 3) ≤ #G.edgeFinset := by
+lemma EdgeDisjointTriangles.three_mul_card_cliqueFinset_le_size
+    (hG : G.EdgeDisjointTriangles) :
+    3 * #(G.cliqueFinset 3) ≤ G.size := by
+  unfold size
   rw [mul_comm, ← mul_one #G.edgeFinset]
   refine card_mul_le_card_mul (fun s e ↦ e ∈ s.sym2) ?_ (fun e he ↦ ?_)
   · simp only [is3Clique_iff, mem_cliqueFinset_iff, mem_sym2_iff, forall_exists_index, and_imp]
@@ -158,9 +160,10 @@ lemma EdgeDisjointTriangles.card_edgeFinset_le (hG : G.EdgeDisjointTriangles) :
       mem_cliqueFinset_iff, mem_cliqueSet_iff]
       using hG.mem_sym2_subsingleton (G.not_isDiag_of_mem_edgeSet <| mem_edgeFinset.1 he)
 
-lemma LocallyLinear.card_edgeFinset (hG : G.LocallyLinear) :
-    #G.edgeFinset = 3 * #(G.cliqueFinset 3) := by
-  refine hG.edgeDisjointTriangles.card_edgeFinset_le.antisymm' ?_
+lemma LocallyLinear.size_eq_three_mul_card_cliqueFinset (hG : G.LocallyLinear) :
+    G.size = 3 * #(G.cliqueFinset 3) := by
+  refine hG.edgeDisjointTriangles.three_mul_card_cliqueFinset_le_size.antisymm' ?_
+  unfold size
   rw [← mul_comm, ← mul_one #_]
   refine card_mul_le_card_mul (fun e s ↦ e ∈ s.sym2) ?_ ?_
   · simpa [Sym2.forall, Nat.one_le_iff_ne_zero, -Finset.card_eq_zero, Finset.card_ne_zero,
@@ -176,6 +179,13 @@ lemma LocallyLinear.card_edgeFinset (hG : G.LocallyLinear) :
     mem_edgeFinset, mem_singleton, and_imp, mem_edgeSet, Sym2.mem_iff, forall_eq_or_imp,
     forall_eq]
   rintro d e hde (rfl | rfl | rfl) (rfl | rfl | rfl) <;> simp [*] at *
+
+@[deprecated (since := "2026-05-28")]
+alias EdgeDisjointTriangles.card_edgeFinset_le :=
+  EdgeDisjointTriangles.three_mul_card_cliqueFinset_le_size
+
+@[deprecated (since := "2026-05-28")]
+alias LocallyLinear.card_edgeFinset := LocallyLinear.size_eq_three_mul_card_cliqueFinset
 
 end LocallyLinear
 

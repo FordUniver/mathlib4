@@ -166,7 +166,8 @@ private lemma locallyLinear (hs : ThreeAPFree (s : Set α)) :
 private lemma card_edgeFinset (hs : ThreeAPFree (s : Set α)) [DecidableEq α] :
     #(graph <| triangleIndices s).edgeFinset = 3 * card α * #s := by
   haveI := noAccidental hs
-  rw [(locallyLinear hs).card_edgeFinset, card_triangles, card_triangleIndices, mul_assoc]
+  rw [← SimpleGraph.size, (locallyLinear hs).size_eq_three_mul_card_cliqueFinset, card_triangles,
+    card_triangleIndices, mul_assoc]
 
 end RuzsaSzemeredi
 
