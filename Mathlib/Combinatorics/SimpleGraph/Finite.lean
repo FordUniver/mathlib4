@@ -321,10 +321,6 @@ theorem degree_lt_order [Fintype V] [DecidableRel G.Adj] (v : V) :
 
 @[deprecated (since := "2026-05-28")] alias degree_lt_card_verts := degree_lt_order
 
-theorem degree_le_order_sub_one [Fintype V] [DecidableRel G.Adj] (v : V) :
-    G.degree v ≤ G.order - 1 :=
-  Nat.le_sub_one_of_lt (G.degree_lt_order v)
-
 end FiniteAt
 
 section LocallyFinite
