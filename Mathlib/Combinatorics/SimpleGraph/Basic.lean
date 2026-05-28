@@ -159,6 +159,9 @@ namespace SimpleGraph
 
 variable {ι : Sort*} {V : Type u} (G : SimpleGraph V) {a b c u v w : V} {e : Sym2 V}
 
+/-- The **order** of a graph: the number of vertices. -/
+abbrev order (_G : SimpleGraph V) [Fintype V] : ℕ := Fintype.card V
+
 @[simp]
 protected theorem irrefl {v : V} : ¬G.Adj v v :=
   G.loopless.irrefl v

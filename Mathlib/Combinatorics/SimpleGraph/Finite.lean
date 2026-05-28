@@ -132,9 +132,6 @@ theorem edgeSet_univ_card : #(univ : Finset G.edgeSet) = #G.edgeFinset := by
 
 variable [Fintype V]
 
-/-- The **order** of a graph: the number of vertices. -/
-abbrev order (_G : SimpleGraph V) : ℕ := Fintype.card V
-
 @[simp]
 theorem edgeFinset_top [DecidableEq V] :
     (⊤ : SimpleGraph V).edgeFinset = Sym2.diagSetᶜ.toFinset := by simp [← coe_inj]
