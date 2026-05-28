@@ -66,7 +66,7 @@ abbrev TopEdgeLabeling (V K : Type*) :=
 
 theorem card_topEdgeLabeling [DecidableEq V] [Fintype V] [Fintype K] :
     card (TopEdgeLabeling V K) = card K ^ (card V).choose 2 :=
-  Fintype.card_fun.trans (by rw [← edgeFinset_card, card_edgeFinset_top_eq_card_choose_two])
+  Fintype.card_fun.trans (by rw [← edgeFinset_card, ← size, size_top])
 
 namespace EdgeLabeling
 

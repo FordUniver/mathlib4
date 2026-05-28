@@ -137,24 +137,21 @@ theorem edgeFinset_top [DecidableEq V] :
     (⊤ : SimpleGraph V).edgeFinset = Sym2.diagSetᶜ.toFinset := by simp [← coe_inj]
 
 /-- The complete graph on `n` vertices has `n.choose 2` edges. -/
-theorem card_edgeFinset_top_eq_card_choose_two [DecidableEq V] :
-    #(⊤ : SimpleGraph V).edgeFinset = (Fintype.card V).choose 2 := by
-  simp_rw [edgeFinset, Set.toFinset_card, edgeSet_top, ← Sym2.card_diagSet_compl]
-
-/-- The complete graph on `n` vertices has `n.choose 2` edges. -/
 theorem size_top [DecidableEq V] :
-    (⊤ : SimpleGraph V).size = ((⊤ : SimpleGraph V).order).choose 2 :=
-  card_edgeFinset_top_eq_card_choose_two
+    (⊤ : SimpleGraph V).size = ((⊤ : SimpleGraph V).order).choose 2 := by
+  simp_rw [size, edgeFinset, Set.toFinset_card, edgeSet_top, ← Sym2.card_diagSet_compl]
 
-/-- Any graph on `n` vertices has at most `n.choose 2` edges. -/
-theorem card_edgeFinset_le_card_choose_two : #G.edgeFinset ≤ (Fintype.card V).choose 2 := by
-  classical
-  rw [← card_edgeFinset_top_eq_card_choose_two]
-  exact card_le_card (edgeFinset_mono le_top)
+@[deprecated (since := "2026-05-28")]
+alias card_edgeFinset_top_eq_card_choose_two := size_top
 
 /-- A graph of order `n` has size at most `n.choose 2`. -/
-theorem size_le_order_choose_two : G.size ≤ G.order.choose 2 :=
-  card_edgeFinset_le_card_choose_two
+theorem size_le_order_choose_two : G.size ≤ G.order.choose 2 := by
+  classical
+  rw [show G.order.choose 2 = (⊤ : SimpleGraph V).size from size_top.symm]
+  exact card_le_card (edgeFinset_mono le_top)
+
+@[deprecated (since := "2026-05-28")]
+alias card_edgeFinset_le_card_choose_two := size_le_order_choose_two
 
 end EdgeFinset
 

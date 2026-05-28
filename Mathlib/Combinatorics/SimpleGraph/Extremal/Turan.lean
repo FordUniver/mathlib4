@@ -372,7 +372,8 @@ theorem card_edgeFinset_turanGraph {n r : ℕ} :
     (n ^ 2 - (n % r) ^ 2) * (r - 1) / (2 * r) + (n % r).choose 2 := by
   rcases r.eq_zero_or_pos with rfl | hr
   · rw [Nat.mod_zero, tsub_self, zero_mul, Nat.zero_div, zero_add]
-    have := card_edgeFinset_top_eq_card_choose_two (V := Fin n)
+    have := size_top (V := Fin n)
+    unfold size order at this
     rw [Fintype.card_fin] at this; convert! this; exact turanGraph_zero
   · have ring₁ (n) : (n ^ 2 - (n % r) ^ 2) * (r - 1) / (2 * r) =
         n % r * (n / r) * (r - 1) + r * (r - 1) * (n / r) ^ 2 / 2 := by
@@ -382,7 +383,8 @@ theorem card_edgeFinset_turanGraph {n r : ℕ} :
       rw [Nat.mul_div_mul_right _ _ hr, Nat.mul_add_div zero_lt_two]
     rcases lt_or_ge n r with h | h
     · rw [Nat.mod_eq_of_lt h, tsub_self, zero_mul, Nat.zero_div, zero_add]
-      have := card_edgeFinset_top_eq_card_choose_two (V := Fin n)
+      have := size_top (V := Fin n)
+      unfold size order at this
       rw [Fintype.card_fin] at this; convert! this
       rw [turanGraph_eq_top]; exact .inr h.le
     · let n' := n - r
@@ -423,7 +425,7 @@ theorem CliqueFree.card_edgeFinset_le (cf : G.CliqueFree (r + 1)) :
   rcases r.eq_zero_or_pos with rfl | hr
   · rw [cliqueFree_one, ← Fintype.card_eq_zero_iff] at cf
     simp_rw [zero_tsub, mul_zero, Nat.mod_zero, Nat.div_zero, zero_add]
-    exact card_edgeFinset_le_card_choose_two
+    exact size_le_order_choose_two
   · obtain ⟨H, _, maxH⟩ := exists_isTuranMaximal (V := V) hr
     convert! maxH.2 cf
     rw [((isTuranMaximal_iff_nonempty_iso_turanGraph hr).mp maxH).some.card_edgeFinset_eq,
