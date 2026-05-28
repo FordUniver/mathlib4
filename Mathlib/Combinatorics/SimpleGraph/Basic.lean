@@ -11,7 +11,6 @@ public import Mathlib.Data.Rel
 public import Mathlib.Data.Set.Finite.Basic
 public import Mathlib.Data.Sym.Sym2
 public import Mathlib.Order.CompleteBooleanAlgebra
-public import Mathlib.SetTheory.Cardinal.Finite
 
 /-!
 # Simple graphs
@@ -614,30 +613,6 @@ instance fintypeEdgeSetSdiff [DecidableEq V] [Fintype G₁.edgeSet] [Fintype G�
   exact Set.fintypeDiff _ _
 
 end EdgeSet
-
-section OrderSize
-
-/-- The **order** of a graph: the number of vertices.
-
-This is `Nat.card V`, so it equals `0` if `V` is infinite. -/
-noncomputable def order (_G : SimpleGraph V) : ℕ := Nat.card V
-
-/-- The **size** of a graph: the number of edges.
-
-This is `Nat.card G.edgeSet`, so it equals `0` if `G.edgeSet` is infinite. -/
-noncomputable def size (G : SimpleGraph V) : ℕ := Nat.card G.edgeSet
-
-@[simp]
-lemma order_eq_natCard (G : SimpleGraph V) : G.order = Nat.card V := rfl
-
-@[simp]
-lemma size_eq_natCard_edgeSet (G : SimpleGraph V) : G.size = Nat.card G.edgeSet := rfl
-
-@[simp]
-lemma size_bot : (⊥ : SimpleGraph V).size = 0 := by
-  simp [size, edgeSet_bot]
-
-end OrderSize
 
 section FromEdgeSet
 

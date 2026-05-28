@@ -146,13 +146,30 @@ theorem card_edgeFinset_le_card_choose_two : #G.edgeFinset ≤ (Fintype.card V).
 
 end EdgeFinset
 
+section OrderSize
+
+/-- The **order** of a graph: the number of vertices. -/
+def order (_G : SimpleGraph V) [Fintype V] : ℕ := Fintype.card V
+
+/-- The **size** of a graph: the number of edges. -/
+def size (G : SimpleGraph V) [Fintype G.edgeSet] : ℕ := Fintype.card G.edgeSet
+
+@[simp]
+lemma order_eq_card [Fintype V] : G.order = Fintype.card V := rfl
+
+@[simp]
+lemma size_eq_card_edgeSet [Fintype G.edgeSet] : G.size = Fintype.card G.edgeSet := rfl
+
+lemma size_eq_card_edgeFinset [Fintype G.edgeSet] : G.size = #G.edgeFinset :=
+  edgeFinset_card.symm
+
 /-- A graph of order `n` has size at most `n.choose 2`. -/
-theorem size_le_order_choose_two [Finite V] : G.size ≤ G.order.choose 2 := by
-  have : Fintype V := Fintype.ofFinite V
-  have : Fintype G.edgeSet := Fintype.ofFinite _
-  rw [size_eq_natCard_edgeSet, order_eq_natCard,
-    Nat.card_eq_fintype_card, Nat.card_eq_fintype_card, ← edgeFinset_card]
+theorem size_le_order_choose_two [Fintype V] [Fintype G.edgeSet] :
+    G.size ≤ G.order.choose 2 := by
+  rw [size_eq_card_edgeFinset]
   exact card_edgeFinset_le_card_choose_two
+
+end OrderSize
 
 section FiniteAt
 
@@ -319,9 +336,8 @@ theorem degree_lt_card_verts [Fintype V] [DecidableRel G.Adj] (v : V) :
   Finset.card_lt_univ_of_notMem <| G.notMem_neighborFinset_self v
 
 theorem degree_le_order_sub_one [Fintype V] [DecidableRel G.Adj] (v : V) :
-    G.degree v ≤ G.order - 1 := by
-  rw [order_eq_natCard, Nat.card_eq_fintype_card]
-  exact Nat.le_sub_one_of_lt (G.degree_lt_card_verts v)
+    G.degree v ≤ G.order - 1 :=
+  Nat.le_sub_one_of_lt (G.degree_lt_card_verts v)
 
 end FiniteAt
 
@@ -490,7 +506,7 @@ lemma minDegree_le_maxDegree [DecidableRel G.Adj] : G.minDegree ≤ G.maxDegree 
 
 theorem IsRegularOfDegree.minDegree_eq [Nonempty V] [DecidableRel G.Adj] {d : ℕ}
     (h : G.IsRegularOfDegree d) : G.minDegree = d := by
-  simp [minDegree, h.degree_eq, Finset.image_const, -ENat.some_eq_coe]
+  simp [minDegree, h.degree_eq, Finset.image_const]
 
 @[simp]
 lemma minDegree_bot_eq_zero : (⊥ : SimpleGraph V).minDegree = 0 :=
