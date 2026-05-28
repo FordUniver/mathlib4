@@ -165,7 +165,7 @@ theorem size_induce_compl_singleton (G : SimpleGraph V) [DecidableRel G.Adj] (x 
   unfold size
   simp_rw [edgeFinset, Set.toFinset_card,
     ← G.induce_deleteIncidenceSet_of_notMem h_notMem, ← Set.toFinset_card]
-  apply card_edgeFinset_induce_of_support_subset
+  apply size_induce_of_support_subset
   trans G.support \ {x}
   · exact support_deleteIncidenceSet_subset G x
   · rw [Set.compl_eq_univ_diff]

@@ -297,8 +297,9 @@ theorem degree_completeEquipartiteGraph (v) :
   rw [← card_neighborFinset_eq_degree, neighborFinset_completeEquipartiteGraph v,
     card_product, card_compl, card_singleton, Fintype.card_fin, card_univ, Fintype.card_fin]
 
-theorem card_edgeFinset_completeEquipartiteGraph :
-    #(completeEquipartiteGraph r t).edgeFinset = r.choose 2 * t ^ 2 := by
+theorem size_completeEquipartiteGraph :
+    (completeEquipartiteGraph r t).size = r.choose 2 * t ^ 2 := by
+  unfold size
   rw [← mul_right_inj' two_ne_zero, ← sum_degrees_eq_twice_card_edges]
   conv_lhs =>
     rhs; intro v
@@ -307,6 +308,9 @@ theorem card_edgeFinset_completeEquipartiteGraph :
   conv_rhs =>
     rw [← Nat.mul_assoc, Nat.choose_two_right, Nat.mul_div_cancel' r.even_mul_pred_self.two_dvd]
   rw [← mul_assoc, mul_comm r _, mul_assoc t _ _, mul_comm t, mul_assoc _ t, ← pow_two]
+
+@[deprecated (since := "2026-05-28")]
+alias card_edgeFinset_completeEquipartiteGraph := size_completeEquipartiteGraph
 
 variable [Fintype α]
 

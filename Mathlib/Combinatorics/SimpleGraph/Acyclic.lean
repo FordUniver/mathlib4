@@ -320,11 +320,12 @@ theorem IsAcyclic.isPath_iff_isTrail (hG : G.IsAcyclic) {v w : V} (p : G.Walk v 
     p.IsPath ↔ p.IsTrail :=
   ⟨IsPath.isTrail, fun h ↦ hG.isPath_iff_isChain p |>.mpr <| p.isTrail_def.mp h |>.isChain⟩
 
-lemma IsTree.card_edgeFinset [Fintype V] [Fintype G.edgeSet] (hG : G.IsTree) :
-    Finset.card G.edgeFinset + 1 = Fintype.card V := by
+lemma IsTree.size_add_one [Fintype V] [Fintype G.edgeSet] (hG : G.IsTree) :
+    G.size + 1 = G.order := by
   have := hG.connected.nonempty
   inhabit V
   classical
+  unfold size order
   have : Finset.card ({default} : Finset V)ᶜ + 1 = Fintype.card V := by
     rw [Finset.card_compl, Finset.card_singleton, Nat.sub_add_cancel Fintype.card_pos]
   rw [← this, add_left_inj]
@@ -369,6 +370,8 @@ lemma IsTree.card_edgeFinset [Fintype V] [Fintype G.edgeSet] (hG : G.IsTree) :
         simp [this, hf' _ _ ((hf _).dropUntil hy)] at h'
       refine (hG.existsUnique_path _ _).unique ((hf _).takeUntil _) ?_
       simp [h.ne]
+
+@[deprecated (since := "2026-05-28")] alias IsTree.card_edgeFinset := IsTree.size_add_one
 
 /-- A minimally connected graph is a tree. -/
 lemma isTree_of_minimal_connected (h : Minimal Connected G) : IsTree G := by
@@ -502,15 +505,15 @@ lemma Connected.card_vert_le_card_edgeSet_add_one (h : G.Connected) :
   · simp
   have := Fintype.ofFinite
   obtain ⟨T, hle, hT⟩ := h.exists_isTree_le
-  rw [Nat.card_eq_fintype_card, ← hT.card_edgeFinset, add_le_add_iff_right,
-    Nat.card_eq_fintype_card, ← edgeFinset_card]
+  rw [Nat.card_eq_fintype_card, ← order, ← hT.size_add_one, add_le_add_iff_right,
+    Nat.card_eq_fintype_card, ← edgeFinset_card, ← size]
   exact Finset.card_mono <| by simpa
 
 lemma isTree_iff_connected_and_card [Finite V] :
     G.IsTree ↔ G.Connected ∧ Nat.card G.edgeSet + 1 = Nat.card V := by
   have := Fintype.ofFinite V
   classical
-  refine ⟨fun h ↦ ⟨h.connected, by simpa [edgeFinset] using h.card_edgeFinset⟩,
+  refine ⟨fun h ↦ ⟨h.connected, by simpa [edgeFinset, size, order] using h.size_add_one⟩,
     fun ⟨h₁, h₂⟩ ↦ ⟨h₁, ?_⟩⟩
   simp_rw [isAcyclic_iff_forall_adj_isBridge]
   refine fun x y h ↦ by_contra fun hbr ↦
@@ -523,7 +526,7 @@ lemma isTree_iff_connected_and_card [Finite V] :
 lemma IsTree.minDegree_eq_one_of_nontrivial (h : G.IsTree) [Fintype V] [Nontrivial V]
     [DecidableRel G.Adj] : G.minDegree = 1 := by
   by_cases q : 2 ≤ G.minDegree
-  · have := h.card_edgeFinset
+  · have := h.size_add_one
     have := G.sum_degrees_eq_twice_card_edges
     have hle : ∑ v : V, 2 ≤ ∑ v, G.degree v := by
       gcongr

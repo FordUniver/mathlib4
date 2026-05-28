@@ -608,13 +608,20 @@ theorem map_edgeFinset_induce_of_support_subset (h : G.support ⊆ s) :
 
 /-- If the support of the simple graph `G` is a subset of the set `s`, then the induced subgraph of
 `s` has the same number of edges as `G`. -/
-theorem card_edgeFinset_induce_of_support_subset (h : G.support ⊆ s) :
-    #(G.induce s).edgeFinset = #G.edgeFinset := by
+theorem size_induce_of_support_subset (h : G.support ⊆ s) :
+    (G.induce s).size = G.size := by
+  unfold size
   rw [← map_edgeFinset_induce_of_support_subset h, card_map]
 
-theorem card_edgeFinset_induce_support :
-    #(G.induce G.support).edgeFinset = #G.edgeFinset :=
-  card_edgeFinset_induce_of_support_subset subset_rfl
+@[deprecated (since := "2026-05-28")]
+alias card_edgeFinset_induce_of_support_subset := size_induce_of_support_subset
+
+theorem size_induce_support :
+    (G.induce G.support).size = G.size :=
+  size_induce_of_support_subset subset_rfl
+
+@[deprecated (since := "2026-05-28")]
+alias card_edgeFinset_induce_support := size_induce_support
 
 theorem map_neighborFinset_induce [DecidableEq V] (v : s) :
     ((G.induce s).neighborFinset v).map (.subtype (· ∈ s)) = G.neighborFinset v ∩ s.toFinset := by
@@ -657,10 +664,13 @@ theorem edgeFinset_map (f : V ↪ W) (G : SimpleGraph V) [DecidableRel G.Adj] :
   push_cast
   exact G.edgeSet_map f
 
-theorem card_edgeFinset_map (f : V ↪ W) (G : SimpleGraph V) [DecidableRel G.Adj] :
-    #(G.map f).edgeFinset = #G.edgeFinset := by
+theorem size_map (f : V ↪ W) (G : SimpleGraph V) [DecidableRel G.Adj] :
+    (G.map f).size = G.size := by
+  unfold size
   rw [edgeFinset_map]
   exact G.edgeFinset.card_map f.sym2Map
+
+@[deprecated (since := "2026-05-28")] alias card_edgeFinset_map := size_map
 
 end Map
 
