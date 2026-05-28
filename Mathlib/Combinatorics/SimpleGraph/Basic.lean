@@ -9,6 +9,7 @@ public import Mathlib.Combinatorics.SimpleGraph.Init
 public import Mathlib.Data.Finite.Prod
 public import Mathlib.Data.Rel
 public import Mathlib.Data.Set.Finite.Basic
+public import Mathlib.Data.Set.Card
 public import Mathlib.Data.Sym.Sym2
 public import Mathlib.Order.CompleteBooleanAlgebra
 
@@ -613,6 +614,27 @@ instance fintypeEdgeSetSdiff [DecidableEq V] [Fintype G₁.edgeSet] [Fintype G�
   exact Set.fintypeDiff _ _
 
 end EdgeSet
+
+section Cardinality
+
+/-- The **order** of a graph: the number of vertices.
+
+This is `Nat.card V`, so it equals `0` when `V` is infinite (junk-value convention). -/
+@[expose] noncomputable def order (_G : SimpleGraph V) : ℕ := Nat.card V
+
+/-- The **size** of a graph: the number of edges.
+
+This is `G.edgeSet.ncard`, so it equals `0` when `G.edgeSet` is infinite. -/
+@[expose] noncomputable def size (G : SimpleGraph V) : ℕ := G.edgeSet.ncard
+
+theorem order_eq_natCard (G : SimpleGraph V) : G.order = Nat.card V := rfl
+
+theorem size_eq_ncard (G : SimpleGraph V) : G.size = G.edgeSet.ncard := rfl
+
+theorem order_eq_fintype_card [Fintype V] (G : SimpleGraph V) :
+    G.order = Fintype.card V := Nat.card_eq_fintype_card
+
+end Cardinality
 
 section FromEdgeSet
 

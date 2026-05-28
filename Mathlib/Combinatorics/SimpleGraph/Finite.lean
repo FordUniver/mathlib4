@@ -57,6 +57,9 @@ variable {G₁ G₂ : SimpleGraph V} [Fintype G.edgeSet] [Fintype G₁.edgeSet] 
 def edgeFinset : Finset (Sym2 V) :=
   Set.toFinset G.edgeSet
 
+theorem size_eq_card_edgeFinset : G.size = #G.edgeFinset := by
+  rw [size_eq_ncard, edgeFinset, Set.ncard_eq_toFinset_card']
+
 @[simp, norm_cast]
 theorem coe_edgeFinset : (G.edgeFinset : Set (Sym2 V)) = G.edgeSet :=
   Set.coe_toFinset _
@@ -125,7 +128,7 @@ theorem card_edgeSet : Fintype.card G.edgeSet = #G.edgeFinset :=
   .symm <| Set.toFinset_card _
 
 theorem edgeSet_univ_card : #(univ : Finset G.edgeSet) = #G.edgeFinset := by
-  simp [card_edgeSet]
+  rw [← card_edgeSet, Finset.card_univ]
 
 variable [Fintype V]
 
@@ -253,8 +256,9 @@ theorem degree_compl [Fintype (Gᶜ.neighborSet v)] [Fintype V] :
     Gᶜ.degree v = Fintype.card V - 1 - G.degree v := by
   classical
     rw [← card_neighborSet_union_compl_neighborSet G v, Set.toFinset_union]
-    simp [card_union_of_disjoint (Set.disjoint_toFinset.mpr (compl_neighborSet_disjoint G v)),
-      card_neighborSet_eq_degree]
+    simp only [card_union_of_disjoint (Set.disjoint_toFinset.mpr (compl_neighborSet_disjoint G v)),
+      Set.toFinset_card, card_neighborSet_eq_degree]
+    omega
 
 instance incidenceSetFintype [DecidableEq V] : Fintype (G.incidenceSet v) :=
   Fintype.ofEquiv (G.neighborSet v) (G.incidenceSetEquivNeighborSet v).symm
@@ -477,7 +481,7 @@ lemma minDegree_le_maxDegree [DecidableRel G.Adj] : G.minDegree ≤ G.maxDegree 
 
 theorem IsRegularOfDegree.minDegree_eq [Nonempty V] [DecidableRel G.Adj] {d : ℕ}
     (h : G.IsRegularOfDegree d) : G.minDegree = d := by
-  simp [minDegree, h.degree_eq, Finset.image_const]
+  simp [minDegree, h.degree_eq, Finset.image_const, -ENat.some_eq_coe]
 
 @[simp]
 lemma minDegree_bot_eq_zero : (⊥ : SimpleGraph V).minDegree = 0 :=
@@ -525,7 +529,8 @@ theorem Adj.card_commonNeighbors_lt_degree {G : SimpleGraph V} [DecidableRel G.A
 
 theorem card_commonNeighbors_top [DecidableEq V] {v w : V} (h : v ≠ w) :
     Fintype.card (commonNeighbors ⊤ v w) = Fintype.card V - 2 := by
-  simp [commonNeighbors_top_eq, ← Set.toFinset_card, Finset.card_sdiff, h]
+  simp [commonNeighbors_top_eq, ← Nat.card_eq_fintype_card, Nat.card_coe_set_eq,
+    Set.ncard_diff, Set.ncard_insert_of_notMem, h]
 
 end Finite
 
