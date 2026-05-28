@@ -146,7 +146,7 @@ instance LocallyLinear.instDecidable : Decidable G.LocallyLinear :=
 lemma EdgeDisjointTriangles.three_mul_card_cliqueFinset_le_size
     (hG : G.EdgeDisjointTriangles) :
     3 * #(G.cliqueFinset 3) ≤ G.size := by
-  unfold size
+  rw [size_def]
   rw [mul_comm, ← mul_one #G.edgeFinset]
   refine card_mul_le_card_mul (fun s e ↦ e ∈ s.sym2) ?_ (fun e he ↦ ?_)
   · simp only [is3Clique_iff, mem_cliqueFinset_iff, mem_sym2_iff, forall_exists_index, and_imp]
@@ -163,7 +163,7 @@ lemma EdgeDisjointTriangles.three_mul_card_cliqueFinset_le_size
 lemma LocallyLinear.size_eq_three_mul_card_cliqueFinset (hG : G.LocallyLinear) :
     G.size = 3 * #(G.cliqueFinset 3) := by
   refine hG.edgeDisjointTriangles.three_mul_card_cliqueFinset_le_size.antisymm' ?_
-  unfold size
+  rw [size_def]
   rw [← mul_comm, ← mul_one #_]
   refine card_mul_le_card_mul (fun e s ↦ e ∈ s.sym2) ?_ ?_
   · simpa [Sym2.forall, Nat.one_le_iff_ne_zero, -Finset.card_eq_zero, Finset.card_ne_zero,

@@ -71,7 +71,7 @@ lemma antitoneOn_extremalNumber_div_choose_two (H : SimpleGraph W) :
   -- counting `v`
   · intro v hv
     have := size_deleteIncidenceSet_le_extremalNumber h v
-    unfold size at this
+    rw [size_def] at this
     simpa [edgeFinset_deleteIncidenceSet_eq_filter] using this
 
 /-- The **Turán density** of a simple graph `H` is the limit of `extremalNumber n H / n.choose 2`

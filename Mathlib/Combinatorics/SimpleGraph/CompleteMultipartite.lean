@@ -299,7 +299,7 @@ theorem degree_completeEquipartiteGraph (v) :
 
 theorem size_completeEquipartiteGraph :
     (completeEquipartiteGraph r t).size = r.choose 2 * t ^ 2 := by
-  unfold size
+  rw [size_def]
   rw [← mul_right_inj' two_ne_zero, ← sum_degrees_eq_twice_card_edges]
   conv_lhs =>
     rhs; intro v

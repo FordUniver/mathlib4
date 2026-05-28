@@ -110,7 +110,7 @@ lemma disjoint_sdiff_neighborFinset_image :
 theorem size_replaceVertex_of_not_adj (hn : ¬G.Adj s t) :
     (G.replaceVertex s t).size = G.size + G.degree s - G.degree t := by
   have inc : G.incidenceFinset t ⊆ G.edgeFinset := by simp [incidenceFinset, incidenceSet_subset]
-  unfold size
+  rw [size_def]
   rw [G.edgeFinset_replaceVertex_of_not_adj hn,
     card_union_of_disjoint G.disjoint_sdiff_neighborFinset_image, card_sdiff_of_subset inc,
     ← Nat.sub_add_comm <| card_le_card inc, card_incidenceFinset_eq_degree]
@@ -125,7 +125,7 @@ alias card_edgeFinset_replaceVertex_of_not_adj := size_replaceVertex_of_not_adj
 theorem size_replaceVertex_of_adj (ha : G.Adj s t) :
     (G.replaceVertex s t).size = G.size + G.degree s - G.degree t - 1 := by
   have inc : G.incidenceFinset t ⊆ G.edgeFinset := by simp [incidenceFinset, incidenceSet_subset]
-  unfold size
+  rw [size_def]
   rw [G.edgeFinset_replaceVertex_of_adj ha, card_sdiff_of_subset (by simp [ha]),
     card_union_of_disjoint G.disjoint_sdiff_neighborFinset_image, card_sdiff_of_subset inc,
     ← Nat.sub_add_comm <| card_le_card inc, card_incidenceFinset_eq_degree]
@@ -225,7 +225,7 @@ theorem edgeFinset_sup_edge [Fintype (edgeSet (G ⊔ edge s t))] (hn : ¬G.Adj s
 
 theorem size_sup_edge [Fintype (edgeSet (G ⊔ edge s t))] (hn : ¬G.Adj s t) (h : s ≠ t) :
     (G ⊔ edge s t).size = G.size + 1 := by
-  unfold size
+  rw [size_def]
   rw [G.edgeFinset_sup_edge hn h, card_cons]
 
 @[deprecated (since := "2026-05-28")]

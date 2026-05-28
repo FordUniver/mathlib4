@@ -377,7 +377,7 @@ theorem size_turanGraph {n r : ℕ} :
   rcases r.eq_zero_or_pos with rfl | hr
   · rw [Nat.mod_zero, tsub_self, zero_mul, Nat.zero_div, zero_add]
     have := size_top (V := Fin n)
-    unfold size order at this
+    rw [size_def, order_def] at this
     rw [Fintype.card_fin] at this; convert! this; exact turanGraph_zero
   · have ring₁ (n) : (n ^ 2 - (n % r) ^ 2) * (r - 1) / (2 * r) =
         n % r * (n / r) * (r - 1) + r * (r - 1) * (n / r) ^ 2 / 2 := by
@@ -388,7 +388,7 @@ theorem size_turanGraph {n r : ℕ} :
     rcases lt_or_ge n r with h | h
     · rw [Nat.mod_eq_of_lt h, tsub_self, zero_mul, Nat.zero_div, zero_add]
       have := size_top (V := Fin n)
-      unfold size order at this
+      rw [size_def, order_def] at this
       rw [Fintype.card_fin] at this; convert! this
       rw [turanGraph_eq_top]; exact .inr h.le
     · let n' := n - r

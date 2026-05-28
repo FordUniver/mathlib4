@@ -644,9 +644,9 @@ lemma le_size_killCopies [Fintype V] :
     G.size - G.copyCount H ≤ (G.killCopies H).size := by
   classical
   obtain rfl | hH := eq_or_ne H ⊥
-  · simp [size, ← card_edgeSet]
+  · simp [size_def, ← card_edgeSet]
   let f (G' : {G' : G.Subgraph // Nonempty (H ≃g G'.coe)}) := (aux hH G'.2).some
-  unfold size
+  rw [size_def]
   calc
     _ = #G.edgeFinset - card {G' : G.Subgraph // Nonempty (H ≃g G'.coe)} := ?_
     _ ≤ #G.edgeFinset - #(univ.image f) := Nat.sub_le_sub_left card_image_le _

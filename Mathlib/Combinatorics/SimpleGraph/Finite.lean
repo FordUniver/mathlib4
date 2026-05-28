@@ -60,6 +60,8 @@ def edgeFinset : Finset (Sym2 V) :=
 /-- The **size** of a graph: the number of edges. -/
 abbrev size : ℕ := #G.edgeFinset
 
+theorem size_def : G.size = #G.edgeFinset := rfl
+
 @[simp, norm_cast]
 theorem coe_edgeFinset : (G.edgeFinset : Set (Sym2 V)) = G.edgeSet :=
   Set.coe_toFinset _
@@ -139,7 +141,8 @@ theorem edgeFinset_top [DecidableEq V] :
 /-- The complete graph on `n` vertices has `n.choose 2` edges. -/
 theorem size_top [DecidableEq V] :
     (⊤ : SimpleGraph V).size = ((⊤ : SimpleGraph V).order).choose 2 := by
-  simp_rw [size, edgeFinset, Set.toFinset_card, edgeSet_top, ← Sym2.card_diagSet_compl]
+  simp_rw [size_def, order_def, edgeFinset, Set.toFinset_card, edgeSet_top,
+    ← Sym2.card_diagSet_compl]
 
 @[deprecated (since := "2026-05-28")]
 alias card_edgeFinset_top_eq_card_choose_two := size_top
@@ -606,7 +609,7 @@ theorem map_edgeFinset_induce_of_support_subset (h : G.support ⊆ s) :
 `s` has the same number of edges as `G`. -/
 theorem size_induce_of_support_subset (h : G.support ⊆ s) :
     (G.induce s).size = G.size := by
-  unfold size
+  simp only [size_def]
   rw [← map_edgeFinset_induce_of_support_subset h, card_map]
 
 @[deprecated (since := "2026-05-28")]
@@ -662,8 +665,7 @@ theorem edgeFinset_map (f : V ↪ W) (G : SimpleGraph V) [DecidableRel G.Adj] :
 
 theorem size_map (f : V ↪ W) (G : SimpleGraph V) [DecidableRel G.Adj] :
     (G.map f).size = G.size := by
-  unfold size
-  rw [edgeFinset_map]
+  rw [size_def, edgeFinset_map]
   exact G.edgeFinset.card_map f.sym2Map
 
 @[deprecated (since := "2026-05-28")] alias card_edgeFinset_map := size_map

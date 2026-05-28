@@ -162,7 +162,7 @@ subgraph of the vertices `{x}ᶜ`. -/
 theorem size_induce_compl_singleton (G : SimpleGraph V) [DecidableRel G.Adj] (x : V) :
     (G.induce {x}ᶜ).size = (G.deleteIncidenceSet x).size := by
   have h_notMem : x ∉ ({x}ᶜ : Set V) := Set.notMem_compl_iff.mpr (Set.mem_singleton x)
-  unfold size
+  rw [size_def]
   simp_rw [edgeFinset, Set.toFinset_card,
     ← G.induce_deleteIncidenceSet_of_notMem h_notMem, ← Set.toFinset_card]
   apply size_induce_of_support_subset
@@ -186,7 +186,7 @@ theorem edgeFinset_deleteIncidenceSet_eq_sdiff (G : SimpleGraph V) [DecidableRel
 set of the simple graph `G`. -/
 theorem size_deleteIncidenceSet (G : SimpleGraph V) [DecidableRel G.Adj] (x : V) :
     (G.deleteIncidenceSet x).size = G.size - G.degree x := by
-  unfold size
+  rw [size_def]
   simp_rw [← card_incidenceFinset_eq_degree, ← card_sdiff_of_subset (G.incidenceFinset_subset x),
     edgeFinset_deleteIncidenceSet_eq_sdiff]
 

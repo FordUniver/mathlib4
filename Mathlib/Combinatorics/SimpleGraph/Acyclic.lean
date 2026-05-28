@@ -325,7 +325,7 @@ lemma IsTree.size_add_one [Fintype V] [Fintype G.edgeSet] (hG : G.IsTree) :
   have := hG.connected.nonempty
   inhabit V
   classical
-  unfold size order
+  rw [size_def, order_def]
   have : Finset.card ({default} : Finset V)ᶜ + 1 = Fintype.card V := by
     rw [Finset.card_compl, Finset.card_singleton, Nat.sub_add_cancel Fintype.card_pos]
   rw [← this, add_left_inj]
@@ -513,7 +513,7 @@ lemma isTree_iff_connected_and_card [Finite V] :
     G.IsTree ↔ G.Connected ∧ Nat.card G.edgeSet + 1 = Nat.card V := by
   have := Fintype.ofFinite V
   classical
-  refine ⟨fun h ↦ ⟨h.connected, by simpa [edgeFinset, size, order] using h.size_add_one⟩,
+  refine ⟨fun h ↦ ⟨h.connected, by simpa [edgeFinset, size_def, order_def] using h.size_add_one⟩,
     fun ⟨h₁, h₂⟩ ↦ ⟨h₁, ?_⟩⟩
   simp_rw [isAcyclic_iff_forall_adj_isBridge]
   refine fun x y h ↦ by_contra fun hbr ↦
