@@ -260,7 +260,7 @@ theorem isPerfectMatching_iff_forall_degree [∀ v, Fintype (M.neighborSet v)] :
   simp [degree_eq_one_iff_existsUnique_adj, isPerfectMatching_iff]
 
 theorem IsPerfectMatching.even_card [Fintype V] (h : M.IsPerfectMatching) :
-    Even (Fintype.card V) := by
+    Even G.order := by
   classical
   simpa only [h.2.card_verts] using IsMatching.even_card h.1
 

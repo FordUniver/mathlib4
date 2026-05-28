@@ -790,7 +790,7 @@ instance coeFiniteAt {G' : Subgraph G} (v : G'.verts) [Fintype (G'.neighborSet v
   Fintype.ofEquiv _ (coeNeighborSetEquiv v).symm
 
 theorem IsSpanning.card_verts [Fintype V] {G' : Subgraph G} [Fintype G'.verts] (h : G'.IsSpanning) :
-    G'.verts.toFinset.card = Fintype.card V := by
+    G'.verts.toFinset.card = G.order := by
   simp only [isSpanning_iff.1 h, Set.toFinset_univ]
   congr
 
