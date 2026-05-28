@@ -152,22 +152,21 @@ section OrderSize
 def order (_G : SimpleGraph V) [Fintype V] : ℕ := Fintype.card V
 
 /-- The **size** of a graph: the number of edges. -/
-def size (G : SimpleGraph V) [Fintype G.edgeSet] : ℕ := Fintype.card G.edgeSet
+def size (G : SimpleGraph V) [Fintype G.edgeSet] : ℕ := #G.edgeFinset
 
 @[simp]
 lemma order_eq_card [Fintype V] : G.order = Fintype.card V := rfl
 
 @[simp]
-lemma size_eq_card_edgeSet [Fintype G.edgeSet] : G.size = Fintype.card G.edgeSet := rfl
+lemma size_eq_card_edgeFinset [Fintype G.edgeSet] : G.size = #G.edgeFinset := rfl
 
-lemma size_eq_card_edgeFinset [Fintype G.edgeSet] : G.size = #G.edgeFinset :=
-  edgeFinset_card.symm
+lemma size_eq_card_edgeSet [Fintype G.edgeSet] : G.size = Fintype.card G.edgeSet :=
+  edgeFinset_card
 
 /-- A graph of order `n` has size at most `n.choose 2`. -/
 theorem size_le_order_choose_two [Fintype V] [Fintype G.edgeSet] :
-    G.size ≤ G.order.choose 2 := by
-  rw [size_eq_card_edgeFinset]
-  exact card_edgeFinset_le_card_choose_two
+    G.size ≤ G.order.choose 2 :=
+  card_edgeFinset_le_card_choose_two
 
 end OrderSize
 
