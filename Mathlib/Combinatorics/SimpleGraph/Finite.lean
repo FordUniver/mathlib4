@@ -150,10 +150,8 @@ end EdgeFinset
 theorem size_le_order_choose_two [Finite V] : G.size ≤ G.order.choose 2 := by
   classical
   have : Fintype V := Fintype.ofFinite V
-  have : Fintype G.edgeSet := Fintype.ofFinite _
   rw [size_eq_natCard_edgeSet, order_eq_natCard,
-    Nat.card_eq_fintype_card (α := V), Nat.card_eq_fintype_card (α := G.edgeSet),
-    ← edgeFinset_card]
+    Nat.card_eq_fintype_card, Nat.card_eq_fintype_card, ← edgeFinset_card]
   exact card_edgeFinset_le_card_choose_two
 
 section FiniteAt
