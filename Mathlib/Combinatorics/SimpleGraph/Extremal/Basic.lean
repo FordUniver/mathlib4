@@ -101,16 +101,22 @@ theorem extremalNumber_of_fintypeCard_eq [Fintype V] (hc : card V = n) :
 variable [Fintype V] [DecidableRel G.Adj]
 
 /-- If `G` is `H`-free, then `G` has at most `extremalNumber (card V) H` edges. -/
-theorem card_edgeFinset_le_extremalNumber (h : H.Free G) :
+theorem size_le_extremalNumber (h : H.Free G) :
     G.size ≤ extremalNumber (card V) H := by
   rw [extremalNumber_of_fintypeCard_eq rfl]
   convert! @le_sup _ _ _ _ {G | H.Free G} (·.size) G (by simpa using h)
 
+@[deprecated (since := "2026-05-28")]
+alias card_edgeFinset_le_extremalNumber := size_le_extremalNumber
+
 /-- If `G` has more than `extremalNumber (card V) H` edges, then `G` contains a copy of `H`. -/
-theorem IsContained.of_extremalNumber_lt_card_edgeFinset
+theorem IsContained.of_extremalNumber_lt_size
     (h : extremalNumber (card V) H < G.size) : H ⊑ G := by
   contrapose h; push Not
-  exact card_edgeFinset_le_extremalNumber h
+  exact size_le_extremalNumber h
+
+@[deprecated (since := "2026-05-28")]
+alias IsContained.of_extremalNumber_lt_card_edgeFinset := IsContained.of_extremalNumber_lt_size
 
 /-- `extremalNumber (card V) H` is at most `x` if and only if every `H`-free simple graph `G` has
 at most `x` edges. -/
@@ -151,7 +157,7 @@ theorem IsContained.extremalNumber_le {W' : Type*} {H' : SimpleGraph W'} (h : H'
   rw [← Fintype.card_fin n, extremalNumber_le_iff]
   intro _ _ h'
   contrapose! h'
-  exact h.trans (IsContained.of_extremalNumber_lt_card_edgeFinset h')
+  exact h.trans (IsContained.of_extremalNumber_lt_size h')
 
 /-- If `H₁ ≃g H₂`, then `extremalNumber n H₁` equals `extremalNumber n H₂`. -/
 @[congr]
@@ -165,7 +171,7 @@ theorem extremalNumber_congr {n₁ n₂ : ℕ} {W₁ W₂ : Type*} {H₁ : Simpl
   all_goals
     rw [← Fintype.card_fin n₂, extremalNumber_le_iff]
     intro G _ h
-    apply card_edgeFinset_le_extremalNumber
+    apply size_le_extremalNumber
     contrapose h
     exact h.trans' ⟨e.toCopy⟩
 
@@ -178,20 +184,27 @@ edges. -/
 theorem isExtremal_free_iff :
     G.IsExtremal H.Free ↔ H.Free G ∧ G.size = extremalNumber (card V) H := by
   rw [IsExtremal, and_congr_right_iff, ← extremalNumber_le_iff]
-  exact fun h ↦ ⟨eq_of_le_of_ge (card_edgeFinset_le_extremalNumber h), ge_of_eq⟩
+  exact fun h ↦ ⟨eq_of_le_of_ge (size_le_extremalNumber h), ge_of_eq⟩
 
-lemma card_edgeFinset_of_isExtremal_free (h : G.IsExtremal H.Free) :
+lemma size_of_isExtremal_free (h : G.IsExtremal H.Free) :
     G.size = extremalNumber (card V) H := (isExtremal_free_iff.mp h).2
+
+@[deprecated (since := "2026-05-28")]
+alias card_edgeFinset_of_isExtremal_free := size_of_isExtremal_free
 
 /-- If `G` is `H.Free`, then `G.deleteIncidenceSet v` is also `H.Free` and has at most
 `extremalNumber (card V-1) H` many edges. -/
-theorem card_edgeFinset_deleteIncidenceSet_le_extremalNumber
+theorem size_deleteIncidenceSet_le_extremalNumber
     [DecidableEq V] (h : H.Free G) (v : V) :
-    #(G.deleteIncidenceSet v).edgeFinset ≤ extremalNumber (card V - 1) H := by
-  rw [← card_edgeFinset_induce_compl_singleton, ← @card_unique ({v} : Set V), ← card_compl_set]
-  apply card_edgeFinset_le_extremalNumber
+    (G.deleteIncidenceSet v).size ≤ extremalNumber (card V - 1) H := by
+  rw [← size_induce_compl_singleton, ← @card_unique ({v} : Set V), ← card_compl_set]
+  apply size_le_extremalNumber
   contrapose h
   exact h.trans ⟨Copy.induce G {v}ᶜ⟩
+
+@[deprecated (since := "2026-05-28")]
+alias card_edgeFinset_deleteIncidenceSet_le_extremalNumber :=
+  size_deleteIncidenceSet_le_extremalNumber
 
 end ExtremalNumber
 

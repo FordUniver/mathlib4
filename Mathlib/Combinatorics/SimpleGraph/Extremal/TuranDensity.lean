@@ -70,8 +70,9 @@ lemma antitoneOn_extremalNumber_div_choose_two (H : SimpleGraph W) :
       Nat.cast_id, Nat.reduceSubDiff, le_refl]
   -- counting `v`
   · intro v hv
-    simpa [edgeFinset_deleteIncidenceSet_eq_filter]
-      using card_edgeFinset_deleteIncidenceSet_le_extremalNumber h v
+    have := size_deleteIncidenceSet_le_extremalNumber h v
+    unfold size at this
+    simpa [edgeFinset_deleteIncidenceSet_eq_filter] using this
 
 /-- The **Turán density** of a simple graph `H` is the limit of `extremalNumber n H / n.choose 2`
 as `n` approaches `∞`.
@@ -137,7 +138,7 @@ theorem eventually_isContained_of_card_edgeFinset (H : SimpleGraph W) {ε : ℝ}
     conv =>
       enter [2, 1, 1]
       rw [← Fintype.card_fin n]
-    exact hcard_edges.trans (mod_cast card_edgeFinset_le_extremalNumber h_free)
+    exact hcard_edges.trans (mod_cast size_le_extremalNumber h_free)
   · exact antitoneOn_extremalNumber_div_choose_two H hm (hm.trans hn) hn
 
 open Classical in

@@ -159,9 +159,10 @@ instance {G : SimpleGraph V} [DecidableRel G.Adj] {x : V} :
 
 /-- Deleting the incidence set of the vertex `x` retains the same number of edges as in the induced
 subgraph of the vertices `{x}ᶜ`. -/
-theorem card_edgeFinset_induce_compl_singleton (G : SimpleGraph V) [DecidableRel G.Adj] (x : V) :
-    #(G.induce {x}ᶜ).edgeFinset = #(G.deleteIncidenceSet x).edgeFinset := by
+theorem size_induce_compl_singleton (G : SimpleGraph V) [DecidableRel G.Adj] (x : V) :
+    (G.induce {x}ᶜ).size = (G.deleteIncidenceSet x).size := by
   have h_notMem : x ∉ ({x}ᶜ : Set V) := Set.notMem_compl_iff.mpr (Set.mem_singleton x)
+  unfold size
   simp_rw [edgeFinset, Set.toFinset_card,
     ← G.induce_deleteIncidenceSet_of_notMem h_notMem, ← Set.toFinset_card]
   apply card_edgeFinset_induce_of_support_subset
@@ -169,6 +170,9 @@ theorem card_edgeFinset_induce_compl_singleton (G : SimpleGraph V) [DecidableRel
   · exact support_deleteIncidenceSet_subset G x
   · rw [Set.compl_eq_univ_diff]
     exact Set.diff_subset_diff_left (Set.subset_univ G.support)
+
+@[deprecated (since := "2026-05-28")]
+alias card_edgeFinset_induce_compl_singleton := size_induce_compl_singleton
 
 /-- The finite edge set of `G.deleteIncidenceSet x` is the finite edge set of the simple graph `G`
 set difference the finite incidence set of the vertex `x`. -/
@@ -180,10 +184,14 @@ theorem edgeFinset_deleteIncidenceSet_eq_sdiff (G : SimpleGraph V) [DecidableRel
 
 /-- Deleting the incident set of the vertex `x` deletes exactly `G.degree x` edges from the edge
 set of the simple graph `G`. -/
-theorem card_edgeFinset_deleteIncidenceSet (G : SimpleGraph V) [DecidableRel G.Adj] (x : V) :
-    #(G.deleteIncidenceSet x).edgeFinset = #G.edgeFinset - G.degree x := by
+theorem size_deleteIncidenceSet (G : SimpleGraph V) [DecidableRel G.Adj] (x : V) :
+    (G.deleteIncidenceSet x).size = G.size - G.degree x := by
+  unfold size
   simp_rw [← card_incidenceFinset_eq_degree, ← card_sdiff_of_subset (G.incidenceFinset_subset x),
     edgeFinset_deleteIncidenceSet_eq_sdiff]
+
+@[deprecated (since := "2026-05-28")]
+alias card_edgeFinset_deleteIncidenceSet := size_deleteIncidenceSet
 
 /-- Deleting the incident set of the vertex `x` is equivalent to filtering the edges of the simple
 graph `G` that do not contain `x`. -/
