@@ -253,7 +253,7 @@ theorem isBipartiteWith_sum_degrees_eq [G.LocallyFinite] (h : G.IsBipartiteWith 
 variable [Fintype V] [DecidableRel G.Adj]
 
 lemma isBipartiteWith_sum_degrees_eq_twice_card_edges [DecidableEq V] (h : G.IsBipartiteWith s t) :
-    ∑ v ∈ s ∪ t, G.degree v = 2 * #G.edgeFinset := by
+    ∑ v ∈ s ∪ t, G.degree v = 2 * G.size := by
   have hsub : G.support ⊆ ↑s ∪ ↑t := isBipartiteWith_support_subset h
   rw [← coe_union, ← Set.toFinset_subset] at hsub
   rw [← Finset.sum_subset hsub, ← sum_degrees_support_eq_twice_card_edges]
@@ -265,7 +265,7 @@ lemma isBipartiteWith_sum_degrees_eq_twice_card_edges [DecidableEq V] (h : G.IsB
 See `SimpleGraph.sum_degrees_eq_twice_card_edges` for the general version, and
 `SimpleGraph.isBipartiteWith_sum_degrees_eq_card_edges'` for the version from the "right". -/
 theorem isBipartiteWith_sum_degrees_eq_card_edges (h : G.IsBipartiteWith s t) :
-    ∑ v ∈ s, G.degree v = #G.edgeFinset := by
+    ∑ v ∈ s, G.degree v = G.size := by
   classical
   rw [← Nat.mul_left_cancel_iff zero_lt_two, ← isBipartiteWith_sum_degrees_eq_twice_card_edges h,
     sum_union (disjoint_coe.mp h.disjoint), two_mul, add_right_inj]
@@ -276,7 +276,7 @@ theorem isBipartiteWith_sum_degrees_eq_card_edges (h : G.IsBipartiteWith s t) :
 See `SimpleGraph.sum_degrees_eq_twice_card_edges` for the general version, and
 `SimpleGraph.isBipartiteWith_sum_degrees_eq_card_edges` for the version from the "left". -/
 theorem isBipartiteWith_sum_degrees_eq_card_edges' (h : G.IsBipartiteWith s t) :
-    ∑ v ∈ t, G.degree v = #G.edgeFinset := isBipartiteWith_sum_degrees_eq_card_edges h.symm
+    ∑ v ∈ t, G.degree v = G.size := isBipartiteWith_sum_degrees_eq_card_edges h.symm
 
 end IsBipartiteWith
 
@@ -542,8 +542,8 @@ theorem bipartiteDoubleCover_le : G.bipartiteDoubleCover ≤ completeBipartiteGr
   | .inl _, .inl _ | .inr _, .inr _ => by simp at hadj
 
 /-- The bipartite double cover of `G` has twice the number of edges as `G`. -/
-theorem card_edgeFinset_bipartiteDoubleCover [Fintype V] [DecidableRel G.Adj] :
-    #G.bipartiteDoubleCover.edgeFinset = 2 * #G.edgeFinset := by
+theorem size_bipartiteDoubleCover [Fintype V] [DecidableRel G.Adj] :
+    G.bipartiteDoubleCover.size = 2 * G.size := by
   rw [two_mul_card_edgeFinset, eq_comm]
   apply card_bij (fun (v, w) _ ↦ s(.inl v, .inr w))
     (fun _ h ↦ by simpa using h) (by grind) (fun e he ↦ ?_)

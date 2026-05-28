@@ -281,7 +281,7 @@ theorem Colorable.mono {n m : ℕ} (h : n ≤ m) (hc : G.Colorable n) : G.Colora
 theorem Coloring.colorable [Fintype α] (C : G.Coloring α) : G.Colorable (Fintype.card α) :=
   ⟨G.recolorOfCardLE (by simp) C⟩
 
-theorem colorable_of_fintype (G : SimpleGraph V) [Fintype V] : G.Colorable (Fintype.card V) :=
+theorem colorable_of_fintype (G : SimpleGraph V) [Fintype V] : G.Colorable G.order :=
   G.selfColoring.colorable
 
 /-- Noncomputably get a coloring from colorability. -/
@@ -442,7 +442,8 @@ theorem chromaticNumber_bot [Nonempty V] : (⊥ : SimpleGraph V).chromaticNumber
   this.chromaticNumber_le.antisymm <| Order.one_le_iff_pos.2 <| chromaticNumber_pos this
 
 @[simp]
-theorem chromaticNumber_top [Fintype V] : (⊤ : SimpleGraph V).chromaticNumber = Fintype.card V := by
+theorem chromaticNumber_top [Fintype V] :
+    (⊤ : SimpleGraph V).chromaticNumber = (⊤ : SimpleGraph V).order := by
   rw [chromaticNumber_eq_card_iff_forall_surjective (selfColoring _).colorable]
   intro C
   rw [← Finite.injective_iff_surjective]
@@ -464,7 +465,7 @@ theorem chromaticNumber_top_eq_enat_card : (⊤ : SimpleGraph V).chromaticNumber
   · simp
 
 theorem eq_top_of_chromaticNumber_eq_card [Fintype V]
-    (h : G.chromaticNumber = Fintype.card V) : G = ⊤ := by
+    (h : G.chromaticNumber = G.order) : G = ⊤ := by
   classical
   by_contra! hh
   have : G.chromaticNumber ≤ Fintype.card V - 1 := by
@@ -478,10 +479,10 @@ theorem eq_top_of_chromaticNumber_eq_card [Fintype V]
   grind
 
 theorem chromaticNumber_eq_card_iff [Fintype V] :
-    G.chromaticNumber = Fintype.card V ↔ G = ⊤ :=
+    G.chromaticNumber = G.order ↔ G = ⊤ :=
   ⟨eq_top_of_chromaticNumber_eq_card, fun h ↦ h ▸ chromaticNumber_top⟩
 
-theorem chromaticNumber_le_card [Fintype V] : G.chromaticNumber ≤ Fintype.card V := by
+theorem chromaticNumber_le_card [Fintype V] : G.chromaticNumber ≤ G.order := by
   rw [← chromaticNumber_top]
   exact chromaticNumber_mono_of_hom G.selfColoring
 
