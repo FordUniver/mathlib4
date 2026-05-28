@@ -30,7 +30,7 @@ This file defines the **Turán density** of a simple graph.
 * `SimpleGraph.isEquivalent_extremalNumber` is the proof that `extremalNumber n H` is
   asymptotically equivalent to `turanDensity H * n.choose 2` as `n` approaches `∞`.
 
-* `SimpleGraph.isContained_of_card_edgeFinset`: simple graphs on `n` vertices with at least
+* `SimpleGraph.isContained_of_size`: simple graphs on `n` vertices with at least
   `(turanDensity H + o(1)) * n ^ 2` edges contain `H`, for all sufficiently large `n`.
 -/
 

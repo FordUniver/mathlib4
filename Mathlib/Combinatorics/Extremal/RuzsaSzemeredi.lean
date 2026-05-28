@@ -163,10 +163,10 @@ private lemma locallyLinear (hs : ThreeAPFree (s : Set α)) :
     (graph <| triangleIndices s).LocallyLinear :=
   haveI := noAccidental hs; TripartiteFromTriangles.locallyLinear _
 
-private lemma card_edgeFinset (hs : ThreeAPFree (s : Set α)) [DecidableEq α] :
-    #(graph <| triangleIndices s).edgeFinset = 3 * card α * #s := by
+private lemma size (hs : ThreeAPFree (s : Set α)) [DecidableEq α] :
+    (graph <| triangleIndices s).size = 3 * card α * #s := by
   haveI := noAccidental hs
-  rw [← SimpleGraph.size, (locallyLinear hs).size_eq_three_mul_card_cliqueFinset, card_triangles,
+  rw [(locallyLinear hs).size_eq_three_mul_card_cliqueFinset, card_triangles,
     card_triangleIndices, mul_assoc]
 
 end RuzsaSzemeredi

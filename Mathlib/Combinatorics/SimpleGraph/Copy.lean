@@ -575,7 +575,7 @@ set_option backward.privateInPublic.warn false in
 /-- `G.killCopies H` is a subgraph of `G` where an *arbitrary* edge was removed from each copy of
 `H` in `G`. By construction, it doesn't contain `H` (unless `H` had no edges) and has at most the
 number of copies of `H` edges less than `G`. See `free_killCopies` and
-`le_card_edgeFinset_killCopies` for these two properties. -/
+`le_size_killCopies` for these two properties. -/
 noncomputable irreducible_def killCopies (G : SimpleGraph V) (H : SimpleGraph W) :
     SimpleGraph V := by
   classical exact
