@@ -57,6 +57,9 @@ variable {G₁ G₂ : SimpleGraph V} [Fintype G.edgeSet] [Fintype G₁.edgeSet] 
 def edgeFinset : Finset (Sym2 V) :=
   Set.toFinset G.edgeSet
 
+/-- The **size** of a graph: the number of edges. -/
+abbrev size : ℕ := #G.edgeFinset
+
 @[simp, norm_cast]
 theorem coe_edgeFinset : (G.edgeFinset : Set (Sym2 V)) = G.edgeSet :=
   Set.coe_toFinset _
@@ -129,6 +132,9 @@ theorem edgeSet_univ_card : #(univ : Finset G.edgeSet) = #G.edgeFinset := by
 
 variable [Fintype V]
 
+/-- The **order** of a graph: the number of vertices. -/
+abbrev order (_G : SimpleGraph V) : ℕ := Fintype.card V
+
 @[simp]
 theorem edgeFinset_top [DecidableEq V] :
     (⊤ : SimpleGraph V).edgeFinset = Sym2.diagSetᶜ.toFinset := by simp [← coe_inj]
@@ -138,37 +144,22 @@ theorem card_edgeFinset_top_eq_card_choose_two [DecidableEq V] :
     #(⊤ : SimpleGraph V).edgeFinset = (Fintype.card V).choose 2 := by
   simp_rw [edgeFinset, Set.toFinset_card, edgeSet_top, ← Sym2.card_diagSet_compl]
 
+/-- The complete graph on `n` vertices has `n.choose 2` edges. -/
+theorem size_top [DecidableEq V] :
+    (⊤ : SimpleGraph V).size = ((⊤ : SimpleGraph V).order).choose 2 :=
+  card_edgeFinset_top_eq_card_choose_two
+
 /-- Any graph on `n` vertices has at most `n.choose 2` edges. -/
 theorem card_edgeFinset_le_card_choose_two : #G.edgeFinset ≤ (Fintype.card V).choose 2 := by
   classical
   rw [← card_edgeFinset_top_eq_card_choose_two]
   exact card_le_card (edgeFinset_mono le_top)
 
-end EdgeFinset
-
-section OrderSize
-
-/-- The **order** of a graph: the number of vertices. -/
-def order (_G : SimpleGraph V) [Fintype V] : ℕ := Fintype.card V
-
-/-- The **size** of a graph: the number of edges. -/
-def size (G : SimpleGraph V) [Fintype G.edgeSet] : ℕ := #G.edgeFinset
-
-@[simp]
-lemma order_eq_card [Fintype V] : G.order = Fintype.card V := rfl
-
-@[simp]
-lemma size_eq_card_edgeFinset [Fintype G.edgeSet] : G.size = #G.edgeFinset := rfl
-
-lemma size_eq_card_edgeSet [Fintype G.edgeSet] : G.size = Fintype.card G.edgeSet :=
-  edgeFinset_card
-
 /-- A graph of order `n` has size at most `n.choose 2`. -/
-theorem size_le_order_choose_two [Fintype V] [Fintype G.edgeSet] :
-    G.size ≤ G.order.choose 2 :=
+theorem size_le_order_choose_two : G.size ≤ G.order.choose 2 :=
   card_edgeFinset_le_card_choose_two
 
-end OrderSize
+end EdgeFinset
 
 section FiniteAt
 
@@ -274,7 +265,7 @@ theorem nontrivial_of_degree_ne_zero {G : SimpleGraph V} {v : V} [Fintype (G.nei
   simp_all [degree_eq_zero_of_subsingleton]
 
 theorem degree_compl [Fintype (Gᶜ.neighborSet v)] [Fintype V] :
-    Gᶜ.degree v = Fintype.card V - 1 - G.degree v := by
+    Gᶜ.degree v = G.order - 1 - G.degree v := by
   classical
     rw [← card_neighborSet_union_compl_neighborSet G v, Set.toFinset_union]
     simp [card_union_of_disjoint (Set.disjoint_toFinset.mpr (compl_neighborSet_disjoint G v)),
@@ -316,10 +307,10 @@ theorem incidenceFinset_subset [DecidableEq V] [Fintype G.edgeSet] :
   Set.toFinset_subset_toFinset.mpr (G.incidenceSet_subset v)
 
 /-- The degree of a vertex is at most the number of edges. -/
-theorem degree_le_card_edgeFinset [Fintype G.edgeSet] :
-    G.degree v ≤ #G.edgeFinset := by
+theorem degree_le_size [Fintype G.edgeSet] :
+    G.degree v ≤ G.size := by
   classical
-  rw [← card_incidenceFinset_eq_degree]
+  rw [← card_incidenceFinset_eq_degree, size]
   exact card_le_card (G.incidenceFinset_subset v)
 
 variable {G v}
@@ -330,13 +321,15 @@ lemma degree_le_of_le {H : SimpleGraph V} [Fintype (H.neighborSet v)] (hle : G �
   simp_rw [← card_neighborSet_eq_degree]
   exact Set.card_le_card fun v hv => hle hv
 
-theorem degree_lt_card_verts [Fintype V] [DecidableRel G.Adj] (v : V) :
-    G.degree v < Fintype.card V :=
+theorem degree_lt_order [Fintype V] [DecidableRel G.Adj] (v : V) :
+    G.degree v < G.order :=
   Finset.card_lt_univ_of_notMem <| G.notMem_neighborFinset_self v
+
+@[deprecated (since := "2026-05-28")] alias degree_lt_card_verts := degree_lt_order
 
 theorem degree_le_order_sub_one [Fintype V] [DecidableRel G.Adj] (v : V) :
     G.degree v ≤ G.order - 1 :=
-  Nat.le_sub_one_of_lt (G.degree_lt_card_verts v)
+  Nat.le_sub_one_of_lt (G.degree_lt_order v)
 
 end FiniteAt
 
@@ -363,7 +356,7 @@ theorem IsRegularOfDegree.of_isEmpty [IsEmpty V] {d : ℕ} : G.IsRegularOfDegree
   IsEmpty.elim ‹_›
 
 theorem IsRegularOfDegree.compl [Fintype V] [DecidableEq V] {G : SimpleGraph V} [DecidableRel G.Adj]
-    {k : ℕ} (h : G.IsRegularOfDegree k) : Gᶜ.IsRegularOfDegree (Fintype.card V - 1 - k) := by
+    {k : ℕ} (h : G.IsRegularOfDegree k) : Gᶜ.IsRegularOfDegree (G.order - 1 - k) := by
   intro v
   rw [degree_compl, h v]
 
@@ -388,7 +381,7 @@ theorem neighborFinset_compl [DecidableEq V] [DecidableRel G.Adj] (v : V) :
 
 @[simp]
 theorem complete_graph_degree [DecidableEq V] (v : V) :
-    (completeGraph V).degree v = Fintype.card V - 1 := by
+    (completeGraph V).degree v = (completeGraph V).order - 1 := by
   simp_rw [degree, neighborFinset_eq_filter, top_adj, filter_ne]
   rw [card_erase_of_mem (mem_univ v), card_univ]
 
@@ -398,7 +391,7 @@ theorem bot_degree (v : V) : (⊥ : SimpleGraph V).degree v = 0 := by
   exact Finset.card_empty
 
 theorem IsRegularOfDegree.top [DecidableEq V] :
-    (⊤ : SimpleGraph V).IsRegularOfDegree (Fintype.card V - 1) := by
+    (⊤ : SimpleGraph V).IsRegularOfDegree ((⊤ : SimpleGraph V).order - 1) := by
   simp [IsRegularOfDegree]
 
 @[simp]
@@ -448,11 +441,13 @@ lemma minDegree_le_minDegree {H : SimpleGraph V} [DecidableRel G.Adj] [Decidable
     exact fun v ↦ (G.minDegree_le_degree v).trans (G.degree_le_of_le hle)
 
 /-- In a nonempty graph, the minimal degree is less than the number of vertices. -/
-theorem minDegree_lt_card [DecidableRel G.Adj] [Nonempty V] :
-    G.minDegree < Fintype.card V := by
+theorem minDegree_lt_order [DecidableRel G.Adj] [Nonempty V] :
+    G.minDegree < G.order := by
   have ⟨v, hv⟩ := G.exists_minimal_degree_vertex
   rw [hv]
-  apply degree_lt_card_verts
+  apply degree_lt_order
+
+@[deprecated (since := "2026-05-28")] alias minDegree_lt_card := minDegree_lt_order
 
 /-- The maximum degree of all vertices (and `0` if there are no vertices).
 The key properties of this are given in `exists_maximal_degree_vertex`, `degree_le_maxDegree`
@@ -492,7 +487,8 @@ lemma maxDegree_bot_eq_zero : (⊥ : SimpleGraph V).maxDegree = 0 :=
   Nat.le_zero.1 <| maxDegree_le_of_forall_degree_le _ _ (by simp)
 
 @[simp]
-lemma maxDegree_top [DecidableEq V] : (⊤ : SimpleGraph V).maxDegree = Fintype.card V - 1 := by
+lemma maxDegree_top [DecidableEq V] :
+    (⊤ : SimpleGraph V).maxDegree = (⊤ : SimpleGraph V).order - 1 := by
   cases isEmpty_or_nonempty V
   · simp
   exact IsRegularOfDegree.top.maxDegree_eq
@@ -512,7 +508,8 @@ lemma minDegree_bot_eq_zero : (⊥ : SimpleGraph V).minDegree = 0 :=
   Nat.le_zero.1 <| (minDegree_le_maxDegree _).trans (by simp)
 
 @[simp]
-lemma minDegree_top [DecidableEq V] : (⊤ : SimpleGraph V).minDegree = Fintype.card V - 1 := by
+lemma minDegree_top [DecidableEq V] :
+    (⊤ : SimpleGraph V).minDegree = (⊤ : SimpleGraph V).order - 1 := by
   cases isEmpty_or_nonempty V
   · simp
   exact IsRegularOfDegree.top.minDegree_eq
@@ -521,11 +518,13 @@ lemma minDegree_top [DecidableEq V] : (⊤ : SimpleGraph V).minDegree = Fintype.
 The maximum degree of a nonempty graph is less than the number of vertices. Note that the assumption
 that `V` is nonempty is necessary, as otherwise this would assert the existence of a
 natural number less than zero. -/
-theorem maxDegree_lt_card_verts [DecidableRel G.Adj] [Nonempty V] :
-    G.maxDegree < Fintype.card V := by
+theorem maxDegree_lt_order [DecidableRel G.Adj] [Nonempty V] :
+    G.maxDegree < G.order := by
   obtain ⟨v, hv⟩ := G.exists_maximal_degree_vertex
   rw [hv]
-  apply G.degree_lt_card_verts v
+  apply G.degree_lt_order v
+
+@[deprecated (since := "2026-05-28")] alias maxDegree_lt_card_verts := maxDegree_lt_order
 
 theorem card_commonNeighbors_le_degree_left [DecidableRel G.Adj] (v w : V) :
     Fintype.card (G.commonNeighbors v w) ≤ G.degree v := by
@@ -536,9 +535,12 @@ theorem card_commonNeighbors_le_degree_right [DecidableRel G.Adj] (v w : V) :
     Fintype.card (G.commonNeighbors v w) ≤ G.degree w := by
   simp_rw [commonNeighbors_symm _ v w, card_commonNeighbors_le_degree_left]
 
-theorem card_commonNeighbors_lt_card_verts [DecidableRel G.Adj] (v w : V) :
-    Fintype.card (G.commonNeighbors v w) < Fintype.card V :=
-  Nat.lt_of_le_of_lt (G.card_commonNeighbors_le_degree_left _ _) (G.degree_lt_card_verts v)
+theorem card_commonNeighbors_lt_order [DecidableRel G.Adj] (v w : V) :
+    Fintype.card (G.commonNeighbors v w) < G.order :=
+  Nat.lt_of_le_of_lt (G.card_commonNeighbors_le_degree_left _ _) (G.degree_lt_order v)
+
+@[deprecated (since := "2026-05-28")]
+alias card_commonNeighbors_lt_card_verts := card_commonNeighbors_lt_order
 
 /-- If the condition `G.Adj v w` fails, then `card_commonNeighbors_le_degree` is
 the best we can do in general. -/
@@ -552,7 +554,7 @@ theorem Adj.card_commonNeighbors_lt_degree {G : SimpleGraph V} [DecidableRel G.A
   · simpa [Finset.insert_subset_iff, G.commonNeighbors_subset_neighborSet_left v w]
 
 theorem card_commonNeighbors_top [DecidableEq V] {v w : V} (h : v ≠ w) :
-    Fintype.card (commonNeighbors ⊤ v w) = Fintype.card V - 2 := by
+    Fintype.card (commonNeighbors ⊤ v w) = (⊤ : SimpleGraph V).order - 2 := by
   simp [commonNeighbors_top_eq, ← Set.toFinset_card, Finset.card_sdiff, h]
 
 end Finite
