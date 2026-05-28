@@ -6,8 +6,8 @@ Authors: Kyle Miller
 module
 
 public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.Combinatorics.SimpleGraph.Cardinality
 public import Mathlib.Combinatorics.SimpleGraph.Dart
-public import Mathlib.Combinatorics.SimpleGraph.Finite
 public import Mathlib.Data.ZMod.Basic
 
 /-!
@@ -19,7 +19,7 @@ a corollary, is that the number of odd-degree vertices is even.
 
 ## Main definitions
 
-- `SimpleGraph.sum_degrees_eq_twice_card_edges` is the degree-sum formula.
+- `SimpleGraph.sum_degrees_eq_two_mul_size` is the degree-sum formula.
 - `SimpleGraph.even_card_odd_degree_vertices` is the handshaking lemma.
 - `SimpleGraph.odd_card_odd_degree_vertices_ne` is that the number of odd-degree
   vertices different from a given odd-degree vertex is odd.
@@ -87,9 +87,9 @@ theorem dart_edge_fiber_card [DecidableEq V] (e : Sym2 V) (h : e ∈ G.edgeSet) 
   rw [mem_singleton]
   exact d.symm_ne.symm
 
-theorem dart_card_eq_twice_card_edges : Fintype.card G.Dart = 2 * #G.edgeFinset := by
+theorem card_dart_eq_two_mul_size : Fintype.card G.Dart = 2 * G.size := by
   classical
-  rw [← card_univ]
+  rw [size_eq_card_edgeFinset, ← card_univ]
   rw [@card_eq_sum_card_fiberwise _ _ _ Dart.edge _ G.edgeFinset fun d _h =>
       by rw [mem_coe, mem_edgeFinset]; apply Dart.edge_mem]
   rw [← mul_comm, sum_const_nat]
@@ -97,36 +97,53 @@ theorem dart_card_eq_twice_card_edges : Fintype.card G.Dart = 2 * #G.edgeFinset 
   apply G.dart_edge_fiber_card e
   rwa [← mem_edgeFinset]
 
+@[deprecated card_dart_eq_two_mul_size (since := "2026-05-28")]
+theorem dart_card_eq_twice_card_edges : Fintype.card G.Dart = 2 * #G.edgeFinset := by
+  rw [card_dart_eq_two_mul_size, size_eq_card_edgeFinset]
+
 /-- The degree-sum formula.  This is also known as the handshaking lemma, which might
 more specifically refer to `SimpleGraph.even_card_odd_degree_vertices`. -/
-theorem sum_degrees_eq_twice_card_edges : ∑ v, G.degree v = 2 * #G.edgeFinset :=
-  G.dart_card_eq_sum_degrees.symm.trans G.dart_card_eq_twice_card_edges
+theorem sum_degrees_eq_two_mul_size : ∑ v, G.degree v = 2 * G.size :=
+  G.dart_card_eq_sum_degrees.symm.trans G.card_dart_eq_two_mul_size
 
-lemma two_mul_card_edgeFinset : 2 * #G.edgeFinset = #(univ.filter fun (x, y) ↦ G.Adj x y) := by
-  rw [← dart_card_eq_twice_card_edges, ← card_univ]
+@[deprecated sum_degrees_eq_two_mul_size (since := "2026-05-28")]
+theorem sum_degrees_eq_twice_card_edges : ∑ v, G.degree v = 2 * #G.edgeFinset := by
+  rw [sum_degrees_eq_two_mul_size, size_eq_card_edgeFinset]
+
+lemma two_mul_size : 2 * G.size = #(univ.filter fun (x, y) ↦ G.Adj x y) := by
+  rw [← card_dart_eq_two_mul_size, ← card_univ]
   refine card_bij' (fun d _ ↦ (d.fst, d.snd)) (fun xy h ↦ ⟨xy, (mem_filter.1 h).2⟩) ?_ ?_ ?_ ?_
     <;> simp
 
+@[deprecated two_mul_size (since := "2026-05-28")]
+lemma two_mul_card_edgeFinset : 2 * #G.edgeFinset = #(univ.filter fun (x, y) ↦ G.Adj x y) := by
+  rw [← size_eq_card_edgeFinset, two_mul_size]
+
 /-- The degree-sum formula only counting over the vertices that form edges.
 
-See `SimpleGraph.sum_degrees_eq_twice_card_edges` for the general version. -/
-theorem sum_degrees_support_eq_twice_card_edges :
-    ∑ v ∈ G.support, G.degree v = 2 * #G.edgeFinset := by
+See `SimpleGraph.sum_degrees_eq_two_mul_size` for the general version. -/
+theorem sum_degrees_support_eq_two_mul_size :
+    ∑ v ∈ G.support, G.degree v = 2 * G.size := by
   classical
-  simp_rw [← sum_degrees_eq_twice_card_edges,
+  simp_rw [← sum_degrees_eq_two_mul_size,
     ← sum_add_sum_compl G.support.toFinset, left_eq_add]
   apply Finset.sum_eq_zero
   intro v hv
   rw [degree_eq_zero_iff_notMem_support]
   rwa [mem_compl, Set.mem_toFinset] at hv
 
+@[deprecated sum_degrees_support_eq_two_mul_size (since := "2026-05-28")]
+theorem sum_degrees_support_eq_twice_card_edges :
+    ∑ v ∈ G.support, G.degree v = 2 * #G.edgeFinset := by
+  rw [sum_degrees_support_eq_two_mul_size, size_eq_card_edgeFinset]
+
 end DegreeSum
 
-/-- The handshaking lemma.  See also `SimpleGraph.sum_degrees_eq_twice_card_edges`. -/
+/-- The handshaking lemma.  See also `SimpleGraph.sum_degrees_eq_two_mul_size`. -/
 theorem even_card_odd_degree_vertices [Fintype V] [DecidableRel G.Adj] :
     Even #{v | Odd (G.degree v)} := by
   classical
-    have h := congr_arg (fun n => ↑n : ℕ → ZMod 2) G.sum_degrees_eq_twice_card_edges
+    have h := congr_arg (fun n => ↑n : ℕ → ZMod 2) G.sum_degrees_eq_two_mul_size
     simp only [ZMod.natCast_self, zero_mul, Nat.cast_mul] at h
     rw [Nat.cast_sum, ← sum_filter_ne_zero] at h
     rw [sum_congr (g := fun _v ↦ (1 : ZMod 2)) rfl] at h
