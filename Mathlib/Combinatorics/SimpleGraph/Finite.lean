@@ -58,7 +58,8 @@ def edgeFinset : Finset (Sym2 V) :=
   Set.toFinset G.edgeSet
 
 theorem size_eq_card_edgeFinset : G.size = #G.edgeFinset := by
-  rw [size_eq_ncard, edgeFinset, Set.ncard_eq_toFinset_card']
+  show G.edgeSet.ncard = _
+  rw [edgeFinset, Set.ncard_eq_toFinset_card']
 
 @[simp, norm_cast]
 theorem coe_edgeFinset : (G.edgeFinset : Set (Sym2 V)) = G.edgeSet :=

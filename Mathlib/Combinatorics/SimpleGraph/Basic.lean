@@ -627,10 +627,6 @@ This is `Nat.card V`, so it equals `0` when `V` is infinite (junk-value conventi
 This is `G.edgeSet.ncard`, so it equals `0` when `G.edgeSet` is infinite. -/
 @[expose] noncomputable def size (G : SimpleGraph V) : ℕ := G.edgeSet.ncard
 
-theorem order_eq_natCard (G : SimpleGraph V) : G.order = Nat.card V := rfl
-
-theorem size_eq_ncard (G : SimpleGraph V) : G.size = G.edgeSet.ncard := rfl
-
 theorem order_eq_fintype_card [Fintype V] (G : SimpleGraph V) :
     G.order = Fintype.card V := Nat.card_eq_fintype_card
 
