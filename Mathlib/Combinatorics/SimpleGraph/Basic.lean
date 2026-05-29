@@ -614,6 +614,13 @@ instance fintypeEdgeSetSdiff [DecidableEq V] [Fintype G₁.edgeSet] [Fintype G�
 
 end EdgeSet
 
+section Order
+
+/-- The **order** of a graph: the number of vertices. -/
+@[expose] def order (_G : SimpleGraph V) [Fintype V] : ℕ := Fintype.card V
+
+end Order
+
 section FromEdgeSet
 
 variable (s : Set (Sym2 V))
