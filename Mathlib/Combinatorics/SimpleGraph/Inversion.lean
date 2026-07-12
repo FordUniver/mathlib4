@@ -174,8 +174,9 @@ variable [Fintype V] [DecidableEq V] [DecidableLE (SimpleGraph V)]
 Helper construction giving the Finset of edges in `K` but not in `G`, without requiring a
 per-graph `Fintype` instance on the edge sets. Uses `Set.Finite.toFinset` (noncomputable). -/
 
+omit [Fintype V] [DecidableEq V] [DecidableLE (SimpleGraph V)] in
 /-- The set difference of edge sets on a finite vertex type is finite. -/
-lemma edgeSet_sdiff_finite (G K : SimpleGraph V) : (K.edgeSet \ G.edgeSet).Finite :=
+lemma edgeSet_sdiff_finite [Finite V] (G K : SimpleGraph V) : (K.edgeSet \ G.edgeSet).Finite :=
   Set.finite_univ.subset (Set.subset_univ _)
 
 /-- The Finset of edges in `K` but not in `G`. Constructed via `Set.Finite.toFinset`,
@@ -183,10 +184,12 @@ so noncomputable, but requires no per-graph `Fintype` synthesis. -/
 noncomputable def edgeSetSdiffFinset (G K : SimpleGraph V) : Finset (Sym2 V) :=
   (edgeSet_sdiff_finite G K).toFinset
 
+omit [DecidableEq V] [DecidableLE (SimpleGraph V)] in
 @[simp] lemma mem_edgeSetSdiffFinset {G K : SimpleGraph V} {e : Sym2 V} :
     e ∈ edgeSetSdiffFinset G K ↔ e ∈ K.edgeSet ∧ e ∉ G.edgeSet :=
   Set.Finite.mem_toFinset _
 
+omit [DecidableEq V] [DecidableLE (SimpleGraph V)] in
 /-- Under `G ≤ K`, `Nat.card K.edgeSet = Nat.card G.edgeSet + #(edgeSetSdiffFinset G K)`. -/
 lemma natCard_edgeSet_eq_add_card_sdiff {G K : SimpleGraph V} (hGK : G ≤ K) :
     Nat.card K.edgeSet = Nat.card G.edgeSet + #(edgeSetSdiffFinset G K) := by
@@ -194,7 +197,7 @@ lemma natCard_edgeSet_eq_add_card_sdiff {G K : SimpleGraph V} (hGK : G ≤ K) :
       show #(edgeSetSdiffFinset G K) = (K.edgeSet \ G.edgeSet).ncard from
         (Set.ncard_eq_toFinset_card _ (edgeSet_sdiff_finite G K)).symm,
       add_comm]
-  exact (Set.ncard_diff_add_ncard_of_subset (edgeSet_subset_edgeSet.mpr hGK)).symm
+  exact (Set.ncard_sdiff_add_ncard_of_subset (edgeSet_subset_edgeSet.mpr hGK)).symm
 
 /-! ### Bijection between Icc and powerset of extra edges -/
 
@@ -245,7 +248,7 @@ noncomputable def iccEquivPowersetEdgeFinsetSdiff
     apply Subtype.ext
     apply Finset.ext
     intro e
-    rw [mem_edgeSetSdiffFinset, edgeSet_fromEdgeSet, Set.mem_diff, Set.mem_union]
+    rw [mem_edgeSetSdiffFinset, edgeSet_fromEdgeSet, Set.mem_sdiff, Set.mem_union]
     refine ⟨?_, fun heS => ?_⟩
     · rintro ⟨⟨h | h, _⟩, heG⟩
       · exact absurd h heG
@@ -292,7 +295,7 @@ lemma sum_Icc_neg_one_pow_natCard_edgeSet_of_lt
   -- Remaining goal: `edgeSetSdiffFinset G L ≠ ∅`, which would imply `L ≤ G`.
   intro hempty
   have hLsubG : L.edgeSet ⊆ G.edgeSet :=
-    Set.diff_eq_empty.mp ((edgeSet_sdiff_finite G L).toFinset_eq_empty.mp hempty)
+    Set.sdiff_eq_empty.mp ((edgeSet_sdiff_finite G L).toFinset_eq_empty.mp hempty)
   exact absurd (le_antisymm (edgeSet_subset_edgeSet.mp hLsubG) hGL') hGL.ne'
 
 /-! ### Main Möbius identity -/
