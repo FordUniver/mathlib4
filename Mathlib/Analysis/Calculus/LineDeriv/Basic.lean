@@ -38,6 +38,7 @@ derivative. We define in particular the following objects:
 * `HasLineDerivAt 𝕜 f s x v`
 * `lineDerivWithin 𝕜 f s x v`
 * `lineDeriv 𝕜 f x v`
+* `HasQuadraticLineRemainderWith 𝕜 C f`
 
 and develop about them a basic API inspired by the one for the Fréchet derivative.
 
@@ -550,17 +551,31 @@ theorem lineDeriv_neg : lineDeriv 𝕜 f x (-v) = - lineDeriv 𝕜 f x v := by
 
 end SMul
 
-section QuadraticBound
+section QuadraticLineRemainder
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace 𝕜 E]
-  {C : ℝ} {f : E → F}
+  {C : NNReal} {f : E → F}
+
+variable (𝕜)
+
+/-- `HasQuadraticLineRemainderWith 𝕜 C f` means that the first-order Taylor remainder from
+`lineDeriv` is bounded by `C * dist x y ^ 2`, uniformly in `x` and `y`. -/
+def HasQuadraticLineRemainderWith (C : NNReal) (f : E → F) : Prop :=
+  ∀ x y, ‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ C * dist x y ^ 2
+
+variable {𝕜}
+
+namespace HasQuadraticLineRemainderWith
+
+/-- The defining quadratic bound on the first-order Taylor remainder. -/
+theorem norm_le (h : HasQuadraticLineRemainderWith 𝕜 C f) (x y : E) :
+    ‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ C * dist x y ^ 2 :=
+  h x y
 
 /-- A uniform quadratic bound on the remainder from `lineDeriv` ensures that `lineDeriv` is the
 actual line derivative. -/
-theorem hasLineDerivAt_of_quadratic_bound (hC : 0 ≤ C)
-    (h : ∀ x y : E,
-      ‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ C * dist x y ^ 2)
-    (x v : E) : HasLineDerivAt 𝕜 f (lineDeriv 𝕜 f x v) x v := by
+theorem hasLineDerivAt (h : HasQuadraticLineRemainderWith 𝕜 C f) (x v : E) :
+    HasLineDerivAt 𝕜 f (lineDeriv 𝕜 f x v) x v := by
   set L := lineDeriv 𝕜 f x v
   change HasDerivAt (fun t : 𝕜 => f (x + t • v)) L 0
   rw [hasDerivAt_iff_isLittleO_nhds_zero, Asymptotics.isLittleO_iff]
@@ -569,7 +584,7 @@ theorem hasLineDerivAt_of_quadratic_bound (hC : 0 ≤ C)
   filter_upwards [Metric.ball_mem_nhds (0 : 𝕜) (div_pos hε hsum_pos)] with t ht
   simp only [Metric.mem_ball, dist_zero_right] at ht
   simp only [zero_add, zero_smul, add_zero]
-  have hpred := h x (x + t • v)
+  have hpred := h.norm_le x (x + t • v)
   rw [show (x + t • v) - x = t • v from by abel, lineDeriv_smul,
     dist_self_add_right, norm_smul, mul_pow] at hpred
   refine hpred.trans ?_
@@ -581,10 +596,8 @@ theorem hasLineDerivAt_of_quadratic_bound (hC : 0 ≤ C)
 
 /-- If the remainder from `lineDeriv` is uniformly bounded by a quadratic function, then the line
 derivative is linear in the direction. -/
-theorem isLinearMap_lineDeriv_of_quadratic_bound (hC : 0 ≤ C)
-    (h : ∀ x y : E,
-      ‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ C * dist x y ^ 2)
-    (x : E) : IsLinearMap 𝕜 (lineDeriv 𝕜 f x) := by
+theorem isLinearMap_lineDeriv (h : HasQuadraticLineRemainderWith 𝕜 C f) (x : E) :
+    IsLinearMap 𝕜 (lineDeriv 𝕜 f x) := by
   refine IsLinearMap.mk ?_ fun c v => lineDeriv_smul
   intro u v
   obtain ⟨c : 𝕜, hc_pos, hc_lt⟩ := NormedField.exists_norm_lt_one 𝕜
@@ -606,9 +619,9 @@ theorem isLinearMap_lineDeriv_of_quadratic_bound (hC : 0 ≤ C)
   have hg_deriv : HasDerivAt g
       (lineDeriv 𝕜 f x q -
         ((1 - c) • lineDeriv 𝕜 f x u' + c • lineDeriv 𝕜 f x v')) 0 := by
-    exact (hasLineDerivAt_of_quadratic_bound hC h x q).sub
-      (((hasLineDerivAt_of_quadratic_bound hC h x u').const_smul (1 - c)).add
-        ((hasLineDerivAt_of_quadratic_bound hC h x v').const_smul c))
+    exact (h.hasLineDerivAt x q).sub
+      (((h.hasLineDerivAt x u').const_smul (1 - c)).add
+        ((h.hasLineDerivAt x v').const_smul c))
   have hg_zero : g 0 = 0 := by
     simp only [g, zero_smul, add_zero]
     module
@@ -620,8 +633,8 @@ theorem isLinearMap_lineDeriv_of_quadratic_bound (hC : 0 ≤ C)
     let z := x + t • q
     have hba : b - a = t • (v' - u') := by simp [a, b]; module
     have hza : z - a = c • (b - a) := by simp [z, a, b, q]; module
-    have hab := h a b
-    have haz := h a z
+    have hab := h.norm_le a b
+    have haz := h.norm_le a z
     rw [hba, lineDeriv_smul] at hab
     rw [hza, lineDeriv_smul] at haz
     have hab' :
@@ -659,4 +672,6 @@ theorem isLinearMap_lineDeriv_of_quadratic_bound (hC : 0 ≤ C)
     simpa [hg_zero] using hg_littleO
   exact sub_eq_zero.mp (hg_deriv.unique hg_deriv_zero)
 
-end QuadraticBound
+end HasQuadraticLineRemainderWith
+
+end QuadraticLineRemainder

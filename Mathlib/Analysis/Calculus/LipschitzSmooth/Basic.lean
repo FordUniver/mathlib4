@@ -51,7 +51,7 @@ stated for real-valued `f`. -/
 def LipschitzSmoothWith (𝕜 : Type*) {E F : Type*} [NontriviallyNormedField 𝕜]
     [NormedAddCommGroup E] [NormedSpace 𝕜 E] [NormedAddCommGroup F] [NormedSpace 𝕜 F]
     (K : NNReal) (f : E → F) :=
-  ∀ (x y : E), ‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ K / 2 * (dist x y) ^ 2
+  HasQuadraticLineRemainderWith 𝕜 (K / 2) f
 
 theorem lipschitzSmoothWith_iff_lineDeriv {K : NNReal} {f : E → F} :
     LipschitzSmoothWith 𝕜 K f ↔
@@ -69,10 +69,16 @@ variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 variable {K : NNReal} {f : E → F}
 
+/-- The quadratic line-remainder condition underlying `K`-smoothness. -/
+theorem hasQuadraticLineRemainderWith (h : LipschitzSmoothWith 𝕜 K f) :
+    HasQuadraticLineRemainderWith 𝕜 (K / 2) f :=
+  h
+
 /-- The two-sided quadratic bound on the first-order Taylor remainder, restated
 from the definition for dot notation. -/
 theorem lineDeriv_norm_le (h : LipschitzSmoothWith 𝕜 K f) (x y : E) :
-    ‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ K / 2 * (dist x y) ^ 2 := h x y
+    ‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ K / 2 * (dist x y) ^ 2 :=
+  h.hasQuadraticLineRemainderWith.norm_le x y
 
 /-- Two-sided bound on the variation of the line derivative along `y - x`. -/
 theorem lineDeriv_apply_sub_norm_le (h : LipschitzSmoothWith 𝕜 K f) (x y : E) :
@@ -88,8 +94,7 @@ theorem lineDeriv_apply_sub_norm_le (h : LipschitzSmoothWith 𝕜 K f) (x y : E)
 direction. -/
 @[expose]
 noncomputable def lineDerivLinearMap (h : LipschitzSmoothWith 𝕜 K f) (x : E) : E →ₗ[𝕜] F :=
-  IsLinearMap.mk' _ <|
-    isLinearMap_lineDeriv_of_quadratic_bound (C := K / 2) (by positivity) h.lineDeriv_norm_le x
+  IsLinearMap.mk' _ <| h.hasQuadraticLineRemainderWith.isLinearMap_lineDeriv x
 
 @[simp]
 theorem lineDerivLinearMap_apply (h : LipschitzSmoothWith 𝕜 K f) (x v : E) :
@@ -107,7 +112,7 @@ exists at every `x, v` and equals `lineDeriv 𝕜 f x v`. The predicate bound
 is `o(t)`. -/
 theorem hasLineDerivAt (h : LipschitzSmoothWith 𝕜 K f) (x v : E) :
     HasLineDerivAt 𝕜 f (lineDeriv 𝕜 f x v) x v :=
-  hasLineDerivAt_of_quadratic_bound (C := K / 2) (by positivity) h.lineDeriv_norm_le x v
+  h.hasQuadraticLineRemainderWith.hasLineDerivAt x v
 
 /-- A `K`-smooth function is line-differentiable everywhere. -/
 theorem lineDifferentiableAt (h : LipschitzSmoothWith 𝕜 K f) (x v : E) :
