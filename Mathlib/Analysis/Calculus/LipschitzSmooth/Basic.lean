@@ -16,8 +16,9 @@ field `𝕜` is **`K`-smooth** if the first-order Taylor remainder is bounded qu
 `‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ (K / 2) * (dist x y) ^ 2`
 
 for all `x, y`. The predicate uses `lineDeriv` so as not to presuppose Fréchet
-differentiability; equivalent characterisations in `fderiv`, 1D `deriv`, and
-Hilbert-space gradient form live in the sibling files in this directory.
+differentiability. It does, however, force the line derivative to be linear in its
+direction. Equivalent characterisations in `fderiv`, 1D `deriv`, and Hilbert-space
+gradient form live in the sibling files in this directory.
 
 This two-sided (norm) form is orientation-agnostic (closed under `f ↦ -f`) — matching,
 when `𝕜 = ℝ` and `f` is real-valued, the textbook notion of L-smoothness (Lipschitz
@@ -40,8 +41,8 @@ if the first-order Taylor remainder is bounded quadratically:
 The predicate is two-sided (norm), so closed under `f ↦ -f` and matching, when `𝕜 = ℝ`
 and `f` is real-valued, the textbook L-smoothness / `C^{1,1}` class. The `lineDeriv`
 form is the weakest possible underlying derivative form — the predicate implies
-line-differentiability everywhere (`LipschitzSmoothWith.hasLineDerivAt`), so
-the `lineDeriv` value is always the actual line derivative.
+line-differentiability everywhere (`LipschitzSmoothWith.hasLineDerivAt`) and makes
+the line derivative linear in its direction (`LipschitzSmoothWith.lineDerivLinearMap`).
 
 Equivalent characterisations in `fderiv`, `gradient`, and `deriv` form are
 provided in the sibling files, predicated on `Differentiable` where useful.
@@ -83,29 +84,30 @@ theorem lineDeriv_apply_sub_norm_le (h : LipschitzSmoothWith 𝕜 K f) (x y : E)
       = lineDeriv 𝕜 f y (y - x) - lineDeriv 𝕜 f x (y - x) from by abel] at key
   linarith
 
+/-- The line derivative of a `K`-smooth function at `x`, bundled as a linear map in its
+direction. -/
+@[expose]
+noncomputable def lineDerivLinearMap (h : LipschitzSmoothWith 𝕜 K f) (x : E) : E →ₗ[𝕜] F :=
+  IsLinearMap.mk' _ <|
+    isLinearMap_lineDeriv_of_quadratic_bound (C := K / 2) (by positivity) h.lineDeriv_norm_le x
+
+@[simp]
+theorem lineDerivLinearMap_apply (h : LipschitzSmoothWith 𝕜 K f) (x v : E) :
+    h.lineDerivLinearMap x v = lineDeriv 𝕜 f x v :=
+  rfl
+
+/-- The line derivative of a `K`-smooth function is additive in its direction. -/
+theorem lineDeriv_add (h : LipschitzSmoothWith 𝕜 K f) (x u v : E) :
+    lineDeriv 𝕜 f x (u + v) = lineDeriv 𝕜 f x u + lineDeriv 𝕜 f x v :=
+  (h.lineDerivLinearMap x).map_add u v
+
 /-- `K`-smoothness implies line-differentiability: the actual line derivative
 exists at every `x, v` and equals `lineDeriv 𝕜 f x v`. The predicate bound
 `‖f (x + tv) - f x - t • L‖ ≤ K/2 · ‖t‖² ‖v‖²` (via `lineDeriv_smul` to factor `t`)
 is `o(t)`. -/
 theorem hasLineDerivAt (h : LipschitzSmoothWith 𝕜 K f) (x v : E) :
-    HasLineDerivAt 𝕜 f (lineDeriv 𝕜 f x v) x v := by
-  set L := lineDeriv 𝕜 f x v
-  change HasDerivAt (fun t : 𝕜 => f (x + t • v)) L 0
-  rw [hasDerivAt_iff_isLittleO_nhds_zero, Asymptotics.isLittleO_iff]
-  intro ε hε
-  have hsum_pos : (0:ℝ) < K * ‖v‖^2 / 2 + 1 := by positivity
-  filter_upwards [Metric.ball_mem_nhds (0 : 𝕜) (div_pos hε hsum_pos)] with t ht
-  simp only [Metric.mem_ball, dist_zero_right] at ht
-  simp only [zero_add, zero_smul, add_zero]
-  have hpred := h x (x + t • v)
-  rw [show (x + t • v) - x = t • v from by abel, lineDeriv_smul,
-      dist_self_add_right, norm_smul, mul_pow] at hpred
-  refine hpred.trans ?_
-  have ht' : ‖t‖ * (K * ‖v‖^2 / 2 + 1) < ε := (lt_div_iff₀ hsum_pos).mp ht
-  have ht'' : K * ‖v‖^2 / 2 * ‖t‖ ≤ ε := by nlinarith [norm_nonneg t]
-  calc K / 2 * (‖t‖ ^ 2 * ‖v‖ ^ 2)
-      = K * ‖v‖^2 / 2 * ‖t‖ * ‖t‖ := by ring
-    _ ≤ ε * ‖t‖ := mul_le_mul_of_nonneg_right ht'' (norm_nonneg t)
+    HasLineDerivAt 𝕜 f (lineDeriv 𝕜 f x v) x v :=
+  hasLineDerivAt_of_quadratic_bound (C := K / 2) (by positivity) h.lineDeriv_norm_le x v
 
 /-- A `K`-smooth function is line-differentiable everywhere. -/
 theorem lineDifferentiableAt (h : LipschitzSmoothWith 𝕜 K f) (x v : E) :
