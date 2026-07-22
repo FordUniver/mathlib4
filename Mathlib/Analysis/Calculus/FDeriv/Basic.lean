@@ -859,23 +859,15 @@ base point is continuous. -/
 theorem continuous_of_isLittleO_sub (L : E →ₗ[𝕜] F) (hf : ContinuousAt f x₀)
     (hrem : (fun x ↦ f x - f x₀ - L (x - x₀)) =o[𝓝 x₀] fun x ↦ x - x₀) :
     Continuous L := by
-  have hsub : Tendsto (fun x : E ↦ x - x₀) (𝓝 x₀) (𝓝 0) := by
-    have : ContinuousAt (fun x : E ↦ x - x₀) x₀ := by fun_prop
-    simpa using this.tendsto
-  have hrem₀ : Tendsto (fun x ↦ f x - f x₀ - L (x - x₀)) (𝓝 x₀) (𝓝 0) :=
-    hrem.trans_tendsto hsub
-  have hf₀ : Tendsto (fun x ↦ f x - f x₀) (𝓝 x₀) (𝓝 0) := by
-    simpa using hf.tendsto.sub_const (f x₀)
-  have hL : Tendsto (fun x ↦ L (x - x₀)) (𝓝 x₀) (𝓝 0) := by
-    convert hf₀.sub hrem₀ using 1
-    · funext x
-      module
-    · simp
   apply continuous_of_tendsto_nhds_zero L
-  have hadd : Tendsto (fun y : E ↦ x₀ + y) (𝓝 0) (𝓝 x₀) := by
-    have : ContinuousAt (fun y : E ↦ x₀ + y) 0 := by fun_prop
-    simpa using this.tendsto
-  simpa [Function.comp_def] using hL.comp hadd
+  have hshift : Tendsto (fun y : E ↦ x₀ + y) (𝓝 0) (𝓝 x₀) := by
+    simpa using (show ContinuousAt (fun y : E ↦ x₀ + y) 0 by fun_prop).tendsto
+  have hrem₀ : Tendsto (fun y ↦ f (x₀ + y) - f x₀ - L y) (𝓝 0) (𝓝 0) := by
+    convert (hrem.trans_tendsto <| by
+      simpa using (show ContinuousAt (fun x : E ↦ x - x₀) x₀ by fun_prop).tendsto).comp hshift
+    simp only [Function.comp_apply, add_sub_cancel_left]
+  simpa only [Function.comp_apply, _root_.sub_sub_cancel, sub_self, sub_zero] using
+    ((hf.tendsto.comp hshift).sub_const (f x₀)).sub hrem₀
 
 /-- A function continuous at a point and admitting an algebraic linear first-order approximation
 there is Fréchet differentiable at that point. -/
