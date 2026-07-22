@@ -5,7 +5,7 @@ Authors: Christoph Spiegel
 -/
 module
 
-public import Mathlib.Analysis.Calculus.LineDeriv.Basic
+public import Mathlib.Analysis.Calculus.LineDeriv.QuadraticRemainder
 
 /-!
 # Lipschitz smoothness
@@ -78,7 +78,7 @@ theorem hasQuadraticLineRemainderWith (h : LipschitzSmoothWith 𝕜 K f) :
 from the definition for dot notation. -/
 theorem lineDeriv_norm_le (h : LipschitzSmoothWith 𝕜 K f) (x y : E) :
     ‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ K / 2 * (dist x y) ^ 2 :=
-  h.hasQuadraticLineRemainderWith.norm_le x y
+  h.hasQuadraticLineRemainderWith x y
 
 /-- Two-sided bound on the variation of the line derivative along `y - x`. -/
 theorem lineDeriv_apply_sub_norm_le (h : LipschitzSmoothWith 𝕜 K f) (x y : E) :

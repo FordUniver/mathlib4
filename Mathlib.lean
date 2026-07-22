@@ -1831,6 +1831,7 @@ public import Mathlib.Analysis.Calculus.LineDeriv.Basic
 public import Mathlib.Analysis.Calculus.LineDeriv.IntegrationByParts
 public import Mathlib.Analysis.Calculus.LineDeriv.Measurable
 public import Mathlib.Analysis.Calculus.LineDeriv.QuadraticMap
+public import Mathlib.Analysis.Calculus.LineDeriv.QuadraticRemainder
 public import Mathlib.Analysis.Calculus.LipschitzSmooth.Basic
 public import Mathlib.Analysis.Calculus.LipschitzSmooth.Deriv
 public import Mathlib.Analysis.Calculus.LipschitzSmooth.FDeriv
