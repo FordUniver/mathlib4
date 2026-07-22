@@ -699,6 +699,51 @@ end
 
 end AffineMap
 
+namespace AddMonoidHom
+
+open AffineMap
+
+variable {k E F : Type*} [Ring k] [AddCommGroup E] [Module k E]
+  [AddCommGroup F] [Module k F]
+
+/-- A map sending zero to zero and preserving affine combinations with one fixed nondegenerate
+coefficient is an `AddMonoidHom`. -/
+def ofMapLineMap (f : E → F) (hf₀ : f 0 = 0) (c : k) (hc : IsUnit c)
+    (h₁c : IsUnit (1 - c))
+    (h : ∀ x y, f (lineMap x y c) = lineMap (f x) (f y) c) : E →+ F where
+  toFun := f
+  map_zero' := hf₀
+  map_add' x y := by
+    have hc_map (z : E) : f (c • z) = c • f z := by
+      simpa [lineMap_apply_module, hf₀] using h 0 z
+    have h₁c_map (z : E) : f ((1 - c) • z) = (1 - c) • f z := by
+      simpa [lineMap_apply_module, hf₀] using h z 0
+    let u := h₁c.unit⁻¹
+    let v := hc.unit⁻¹
+    have hu (z : E) : (1 - c) • (u : k) • z = z := by
+      rw [← h₁c.unit_spec, smul_smul]
+      simp [u]
+    have hv (z : E) : c • (v : k) • z = z := by
+      rw [← hc.unit_spec, smul_smul]
+      simp [v]
+    calc
+      f (x + y) = f (lineMap ((u : k) • x) ((v : k) • y) c) := by
+        congr 1
+        rw [lineMap_apply_module, hu, hv]
+      _ = lineMap (f ((u : k) • x)) (f ((v : k) • y)) c := h _ _
+      _ = f x + f y := by
+        rw [lineMap_apply_module, ← h₁c_map, ← hc_map]
+        rw [hu, hv]
+
+@[simp]
+theorem coe_ofMapLineMap (f : E → F) (hf₀ : f 0 = 0) (c : k) (hc : IsUnit c)
+    (h₁c : IsUnit (1 - c))
+    (h : ∀ x y, f (lineMap x y c) = lineMap (f x) (f y) c) :
+    ⇑(ofMapLineMap f hf₀ c hc h₁c h) = f :=
+  rfl
+
+end AddMonoidHom
+
 namespace AffineMap
 
 variable {R k V1 P1 V2 P2 V3 P3 : Type*}

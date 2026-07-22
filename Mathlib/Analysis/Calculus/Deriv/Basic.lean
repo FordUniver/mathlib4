@@ -298,6 +298,15 @@ theorem HasDerivAtFilter.isBigO_sub (h : HasDerivAtFilter f f' L) :
 theorem HasDerivAt.isBigO_sub (h : HasDerivAt f f' x) : (f · - f x) =O[𝓝 x] (· - x) :=
   h.hasFDerivAt.isBigO_sub
 
+theorem Asymptotics.IsBigO.hasDerivWithinAt {n : ℕ}
+    (h : f =O[𝓝[s] x] fun y ↦ ‖y - x‖ ^ n) (hx : x ∈ s) (hn : 1 < n) :
+    HasDerivWithinAt f 0 s x :=
+  (h.hasFDerivWithinAt hx hn).hasDerivWithinAt
+
+theorem Asymptotics.IsBigO.hasDerivAt {n : ℕ}
+    (h : f =O[𝓝 x] fun y ↦ ‖y - x‖ ^ n) (hn : 1 < n) : HasDerivAt f 0 x :=
+  (h.hasFDerivAt hn).hasDerivAt
+
 /-- This theorem holds for any T2 TVS, see `isClosedEmbedding_smul_left`,
 but this would require more imports.
 
