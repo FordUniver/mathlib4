@@ -34,6 +34,8 @@ the quadratic remainder bound coincide.
 * `HasQuadraticLineRemainderWithAt.hasLineDerivAt`: the line derivative actually exists.
 * `HasQuadraticLineRemainderWithAt.lineDerivLinearMap`: the line derivative bundled as a linear
   map in its direction.
+* `HasQuadraticLineRemainderWithAt.continuous_lineDerivLinearMap`: continuity of the algebraically
+  linear line derivative follows from continuity of the function.
 * `HasQuadraticLineRemainderWithAt.differentiableAt_iff_continuousAt`: under a local quadratic
   remainder bound, Fréchet differentiability is equivalent to continuity.
 * `lipschitzSmoothWith_iff_hasQuadraticLineRemainderWith`: the global line-derivative
@@ -202,12 +204,10 @@ theorem lineDeriv_affineCombination (h : HasQuadraticLineRemainderWithAt 𝕜 C 
       funext t
       rw [hlineMap, lineMap_apply_module]]
     exact h.image_lineMap_sub_lineMap_isBigO u v c
-  have hg_zero : g 0 = 0 := by
-    simp only [g, zero_smul, add_zero]
-    module
   have hg_zero' : HasDerivAt g 0 0 := by
-    rw [hasDerivAt_iff_isLittleO]
-    simpa [hg_zero] using hg_bigO.trans_isLittleO (isLittleO_pow_id one_lt_two)
+    have : g =O[𝓝 0] fun t ↦ ‖t - 0‖ ^ 2 := by
+      simpa only [sub_zero, norm_pow] using hg_bigO.norm_right
+    exact this.hasDerivAt one_lt_two
   exact sub_eq_zero.mp (hg.unique hg_zero')
 
 /-- If the remainder from `lineDeriv` is uniformly bounded by a quadratic function in a
@@ -215,15 +215,15 @@ neighborhood of `x`, then the line derivative at `x` is linear in the direction.
 theorem isLinearMap_lineDeriv (h : HasQuadraticLineRemainderWithAt 𝕜 C f x) :
     IsLinearMap 𝕜 (lineDeriv 𝕜 f x) := by
   refine IsLinearMap.mk ?_ fun c v ↦ lineDeriv_smul
-  intro u v
   obtain ⟨c : 𝕜, hc_pos, hc_lt⟩ := NormedField.exists_norm_lt_one 𝕜
   have hc : c ≠ 0 := norm_ne_zero_iff.mp hc_pos.ne'
-  have h_one_sub_c : 1 - c ≠ 0 := by
+  have h₁c : 1 - c ≠ 0 := by
     intro h
     have : c = 1 := (sub_eq_zero.mp h).symm
     simp [this] at hc_lt
-  simpa [h_one_sub_c, hc, lineDeriv_smul] using
-    h.lineDeriv_affineCombination ((1 - c)⁻¹ • u) (c⁻¹ • v) c
+  exact (AddMonoidHom.ofMapLineMap (lineDeriv 𝕜 f x) lineDeriv_zero c hc.isUnit h₁c.isUnit
+    fun u v ↦ by
+      simpa only [lineMap_apply_module] using h.lineDeriv_affineCombination u v c).map_add
 
 /-- The line derivative at `x`, bundled as a linear map in its direction. -/
 @[expose]
@@ -253,33 +253,13 @@ theorem hasFDerivAt (h : HasQuadraticLineRemainderWithAt 𝕜 C f x)
   HasFDerivAt.of_isLittleO <|
     h.isBigO_sub_lineDerivLinearMap.trans_isLittleO (isLittleO_pow_sub_sub x one_lt_two)
 
-private theorem continuous_lineDerivLinearMap
+/-- If `f` is continuous at `x`, then its algebraically linear line derivative at `x` is
+continuous. -/
+theorem continuous_lineDerivLinearMap
     (h : HasQuadraticLineRemainderWithAt 𝕜 C f x) (hf : ContinuousAt f x) :
-    Continuous h.lineDerivLinearMap := by
-  let L := h.lineDerivLinearMap
-  have hsq : Tendsto (fun y : E ↦ ‖y - x‖ ^ 2) (𝓝 x) (𝓝 0) := by
-    have : ContinuousAt (fun y : E ↦ ‖y - x‖ ^ 2) x := by fun_prop
-    simpa using this.tendsto
-  have hr : Tendsto (fun y ↦ f y - f x - L (y - x)) (𝓝 x) (𝓝 0) :=
-    h.isBigO_sub_lineDerivLinearMap.trans_tendsto hsq
-  have hf_inc : Tendsto (fun y ↦ f y - f x) (𝓝 x) (𝓝 0) := by
-    simpa using hf.tendsto.sub
-      (tendsto_const_nhds : Tendsto (fun _ : E ↦ f x) (𝓝 x) (𝓝 (f x)))
-  have hL : Tendsto (fun y ↦ L (y - x)) (𝓝 x) (𝓝 0) := by
-    convert hf_inc.sub hr using 1
-    · funext y
-      module
-    · simp
-  apply continuous_of_tendsto_nhds_zero L
-  have hadd : Tendsto (fun v : E ↦ x + v) (𝓝 0) (𝓝 x) := by
-    have : ContinuousAt (fun v : E ↦ x + v) 0 := by fun_prop
-    simpa using this.tendsto
-  have hcomp := hL.comp hadd
-  have heq : (fun y : E ↦ L (y - x)) ∘ (fun v ↦ x + v) = L := by
-    funext v
-    simp only [Function.comp_apply, add_sub_cancel_left]
-  rw [heq] at hcomp
-  exact hcomp
+    Continuous h.lineDerivLinearMap :=
+  h.lineDerivLinearMap.continuous_of_isLittleO_sub hf <|
+    h.isBigO_sub_lineDerivLinearMap.trans_isLittleO (isLittleO_pow_sub_sub x one_lt_two)
 
 /-- Under a uniform quadratic line remainder bound in a neighborhood of `x`, Fréchet
 differentiability at `x` is equivalent to continuity at `x`. -/
@@ -287,7 +267,9 @@ theorem differentiableAt_iff_continuousAt
     (h : HasQuadraticLineRemainderWithAt 𝕜 C f x) :
     DifferentiableAt 𝕜 f x ↔ ContinuousAt f x :=
   ⟨DifferentiableAt.continuousAt, fun hf ↦
-    (h.hasFDerivAt (continuous_lineDerivLinearMap h hf)).differentiableAt⟩
+    h.lineDerivLinearMap.differentiableAt_of_isLittleO_sub hf <|
+      h.isBigO_sub_lineDerivLinearMap.trans_isLittleO
+        (isLittleO_pow_sub_sub x one_lt_two)⟩
 
 /-- A local quadratic line-remainder bound on a finite-dimensional space over a complete field
 implies Fréchet differentiability at the center. -/
@@ -337,10 +319,10 @@ theorem isLinearMap_lineDeriv (h : HasQuadraticLineRemainderWith 𝕜 C f) (x : 
 /-- For a global quadratic line-remainder bound, Fréchet differentiability is equivalent to
 continuity. -/
 theorem differentiable_iff_continuous (h : HasQuadraticLineRemainderWith 𝕜 C f) :
-    Differentiable 𝕜 f ↔ Continuous f := by
-  refine ⟨Differentiable.continuous, fun hf x ↦ ?_⟩
-  exact (h.hasQuadraticLineRemainderWithAt x).differentiableAt_iff_continuousAt.mpr
-    hf.continuousAt
+    Differentiable 𝕜 f ↔ Continuous f :=
+  ⟨Differentiable.continuous, fun hf x ↦
+    (h.hasQuadraticLineRemainderWithAt x).differentiableAt_iff_continuousAt.mpr
+      hf.continuousAt⟩
 
 /-- A global quadratic line-remainder bound on a finite-dimensional space over a complete field
 implies Fréchet differentiability. -/
@@ -386,23 +368,18 @@ theorem lipschitzSmoothWithAt_iff_hasQuadraticLineRemainderWithAt :
     LipschitzSmoothWithAt 𝕜 K f x ↔
       (∀ᶠ y in 𝓝 x, DifferentiableAt 𝕜 f y) ∧
         HasQuadraticLineRemainderWithAt 𝕜 (K / 2) f x := by
+  rw [lipschitzSmoothWithAt_iff_fderiv, hasQuadraticLineRemainderWithAt_iff,
+    eventually_iff_exists_mem]
+  simp_rw [← lipschitzSmoothOnWith_iff_fderiv 𝕜,
+    ← hasQuadraticLineRemainderOnWith_iff 𝕜]
   constructor
-  · intro h
-    obtain ⟨s, hs, hfs⟩ := h.exists_lipschitzSmoothOnWith
-    refine ⟨?_, (hasQuadraticLineRemainderWithAt_iff 𝕜).mpr ⟨s, hs, ?_⟩⟩
-    · filter_upwards [hs] with y hy
-      exact hfs.differentiableAt hy
-    · exact (hasQuadraticLineRemainderOnWith_iff 𝕜).mp
-        (lipschitzSmoothOnWith_iff_hasQuadraticLineRemainderOnWith.mp hfs).2
-  · rintro ⟨hf, hrem⟩
-    obtain ⟨s, hs, hrem⟩ := (hasQuadraticLineRemainderWithAt_iff 𝕜).mp hrem
-    let t := s ∩ {y | DifferentiableAt 𝕜 f y}
-    apply (lipschitzSmoothWithAt_iff_fderiv 𝕜).mpr
-    refine ⟨t, inter_mem hs hf, ?_⟩
-    apply (lipschitzSmoothOnWith_iff_fderiv 𝕜).mp
-    apply lipschitzSmoothOnWith_iff_hasQuadraticLineRemainderOnWith.mpr
-    refine ⟨fun _ hy ↦ hy.2, ((hasQuadraticLineRemainderOnWith_iff 𝕜).mpr hrem).mono ?_⟩
-    exact Set.inter_subset_left
+  · rintro ⟨s, hs, h⟩
+    obtain ⟨hf, hrem⟩ := lipschitzSmoothOnWith_iff_hasQuadraticLineRemainderOnWith.mp h
+    exact ⟨⟨s, hs, hf⟩, ⟨s, hs, hrem⟩⟩
+  · rintro ⟨⟨t, ht, hf⟩, ⟨s, hs, hrem⟩⟩
+    refine ⟨s ∩ t, inter_mem hs ht, ?_⟩
+    exact lipschitzSmoothOnWith_iff_hasQuadraticLineRemainderOnWith.mpr
+      ⟨fun _ hy ↦ hf _ hy.2, hrem.mono Set.inter_subset_left⟩
 
 namespace LipschitzSmoothOnWith
 
@@ -423,7 +400,7 @@ theorem hasQuadraticLineRemainderWith (h : LipschitzSmoothWith 𝕜 K f) :
 /-- A Lipschitz-smooth function has the expected line derivative in every direction. -/
 theorem hasLineDerivAt (h : LipschitzSmoothWith 𝕜 K f) (x v : E) :
     HasLineDerivAt 𝕜 f (lineDeriv 𝕜 f x v) x v :=
-  h.hasQuadraticLineRemainderWith.hasQuadraticLineRemainderWithAt x |>.hasLineDerivAt v
+  (h.differentiable x).lineDifferentiableAt.hasLineDerivAt
 
 /-- The line derivative of a Lipschitz-smooth function is additive in its direction. -/
 theorem lineDeriv_add (h : LipschitzSmoothWith 𝕜 K f) (x u v : E) :
@@ -444,6 +421,11 @@ theorem hasQuadraticLineRemainderWithAt (h : LipschitzSmoothWithAt 𝕜 K f x) :
 direction. -/
 theorem hasLineDerivAt (h : LipschitzSmoothWithAt 𝕜 K f x) (v : E) :
     HasLineDerivAt 𝕜 f (lineDeriv 𝕜 f x v) x v :=
-  h.hasQuadraticLineRemainderWithAt.hasLineDerivAt v
+  h.differentiableAt.lineDifferentiableAt.hasLineDerivAt
+
+/-- The line derivative of a function Lipschitz smooth near `x` is additive in its direction. -/
+theorem lineDeriv_add (h : LipschitzSmoothWithAt 𝕜 K f x) (u v : E) :
+    lineDeriv 𝕜 f x (u + v) = lineDeriv 𝕜 f x u + lineDeriv 𝕜 f x v := by
+  simpa only [h.differentiableAt.lineDeriv_eq_fderiv] using map_add (fderiv 𝕜 f x) u v
 
 end LipschitzSmoothWithAt
