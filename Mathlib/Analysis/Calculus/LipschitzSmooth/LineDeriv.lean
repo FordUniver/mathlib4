@@ -35,16 +35,14 @@ theorem lipschitzSmoothWith_iff_hasQuadraticLineRemainderWith :
       Differentiable 𝕜 f ∧ HasQuadraticLineRemainderWith 𝕜 (K / 2) f := by
   constructor
   · intro h
-    refine ⟨h.differentiable, ?_⟩
-    rw [hasQuadraticLineRemainderWith_iff]
-    intro x y
+    refine ⟨h.differentiable, fun x y ↦ ?_⟩
     rw [(h.differentiable x).lineDeriv_eq_fderiv]
     simpa only [NNReal.coe_div, NNReal.coe_ofNat] using h.fderiv_norm_le x y
   · rintro ⟨hf, h⟩
     rw [lipschitzSmoothWith_iff_fderiv]
     intro x y
     rw [← (hf x).lineDeriv_eq_fderiv]
-    simpa only [NNReal.coe_div, NNReal.coe_ofNat] using h.norm_le x y
+    simpa only [NNReal.coe_div, NNReal.coe_ofNat] using h x y
 
 /-- Neighborhood-wise Lipschitz smoothness is eventual Fréchet differentiability together with
 the corresponding local quadratic line-remainder bound. -/
@@ -57,13 +55,12 @@ theorem lipschitzSmoothWithAt_iff_hasQuadraticLineRemainderWithAt :
     refine ⟨h.eventually_differentiableAt, ?_⟩
     obtain ⟨s, hs, hbound⟩ := h.exists_fderiv_norm_le
     obtain ⟨t, ht, hf⟩ := eventually_iff_exists_mem.mp h.eventually_differentiableAt
-    apply (hasQuadraticLineRemainderWithAt_iff 𝕜).mpr
     refine ⟨s ∩ t, inter_mem hs ht, fun y hy z hz ↦ ?_⟩
     rw [(hf y hy.2).lineDeriv_eq_fderiv]
     simpa only [NNReal.coe_div, NNReal.coe_ofNat] using hbound y hy.1 z hz.1
   · rintro ⟨hfd, h⟩
     obtain ⟨t, ht, hf⟩ := eventually_iff_exists_mem.mp hfd
-    obtain ⟨s, hs, hbound⟩ := h.exists_norm_le
+    obtain ⟨s, hs, hbound⟩ := h
     apply (lipschitzSmoothWithAt_iff_fderiv 𝕜).mpr
     refine ⟨s ∩ t, inter_mem hs ht, fun y hy z hz ↦ ?_⟩
     rw [← (hf y hy.2).lineDeriv_eq_fderiv]
