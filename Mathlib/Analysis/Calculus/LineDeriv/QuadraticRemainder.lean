@@ -73,29 +73,27 @@ theorem norm_image_lineMap_sub_lineMap_le {s : Set E}
     ‖f (lineMap x y c) - lineMap (f x) (f y) c‖ ≤
       C * (‖c‖ ^ 2 + ‖c‖) * dist x y ^ 2 := by
   let z := lineMap x y c
-  have hzx : z - x = c • (y - x) := by simp [z, lineMap_apply_module']
   have hdist : dist x z = ‖c‖ * dist x y := by
     rw [dist_eq_norm, show x - z = c • (x - y) by
       simp [z, lineMap_apply_module]; module, norm_smul, dist_eq_norm]
-  have hbound : ‖f z - f x - lineDeriv 𝕜 f x (z - x)‖ ≤
-      C * (‖c‖ ^ 2 * dist x y ^ 2) := by
-    calc
-      _ ≤ C * dist x z ^ 2 := h x hx z hz
-      _ = _ := by rw [hdist, mul_pow]
   calc
     ‖f z - lineMap (f x) (f y) c‖ =
         ‖(f z - f x - lineDeriv 𝕜 f x (z - x)) -
           c • (f y - f x - lineDeriv 𝕜 f x (y - x))‖ := by
       congr 1
-      rw [lineMap_apply_module, hzx, lineDeriv_smul]
+      rw [lineMap_apply_module,
+        show z - x = c • (y - x) by simp [z, lineMap_apply_module'], lineDeriv_smul]
       module
     _ ≤ ‖f z - f x - lineDeriv 𝕜 f x (z - x)‖ +
         ‖c • (f y - f x - lineDeriv 𝕜 f x (y - x))‖ := norm_sub_le _ _
     _ = ‖f z - f x - lineDeriv 𝕜 f x (z - x)‖ +
         ‖c‖ * ‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ := by rw [norm_smul]
-    _ ≤ C * (‖c‖ ^ 2 * dist x y ^ 2) + ‖c‖ * (C * dist x y ^ 2) :=
-      add_le_add hbound (mul_le_mul_of_nonneg_left (h x hx y hy) (norm_nonneg c))
-    _ = C * (‖c‖ ^ 2 + ‖c‖) * dist x y ^ 2 := by ring
+    _ ≤ C * dist x z ^ 2 + ‖c‖ * (C * dist x y ^ 2) :=
+      add_le_add (h x hx z hz)
+        (mul_le_mul_of_nonneg_left (h x hx y hy) (norm_nonneg c))
+    _ = C * (‖c‖ ^ 2 + ‖c‖) * dist x y ^ 2 := by
+      rw [hdist, mul_pow]
+      ring
 
 end HasQuadraticLineRemainderOnWith
 
