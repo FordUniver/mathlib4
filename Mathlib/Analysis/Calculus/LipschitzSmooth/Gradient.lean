@@ -34,6 +34,14 @@ theorem lipschitzSmoothWith_iff_inner_gradient :
   rw [lipschitzSmoothWith_iff_fderiv]
   simp only [inner_gradient_left, dist_eq_norm']
 
+theorem lipschitzSmoothOnWith_iff_inner_gradientWithin {s : Set F}
+    (hs : UniqueDiffOn ℝ s) :
+    LipschitzSmoothOnWith ℝ K f s ↔ DifferentiableOn ℝ f s ∧
+      ∀ x ∈ s, ∀ y ∈ s,
+        ‖f y - f x - ⟪gradientWithin f s x, y - x⟫‖ ≤ K / 2 * ‖y - x‖ ^ 2 := by
+  rw [lipschitzSmoothOnWith_iff_fderivWithin hs]
+  simp only [inner_gradientWithin_left, dist_eq_norm']
+
 namespace LipschitzSmoothWith
 
 theorem inner_gradient_norm_le (h : LipschitzSmoothWith ℝ K f) (x y : F) :
@@ -56,6 +64,39 @@ theorem inner_gradient_sub_le (h : LipschitzSmoothWith ℝ K f) (x y : F) :
   exact h.fderiv_sub_apply_le x y
 
 end LipschitzSmoothWith
+
+namespace LipschitzSmoothOnWith
+
+variable {s : Set F}
+
+/-- The defining within-set quadratic bound in terms of `gradientWithin`. -/
+theorem inner_gradientWithin_norm_le (h : LipschitzSmoothOnWith ℝ K f s)
+    (hs : UniqueDiffOn ℝ s) {x y : F} (hx : x ∈ s) (hy : y ∈ s) :
+    ‖f y - f x - ⟪gradientWithin f s x, y - x⟫‖ ≤ K / 2 * ‖y - x‖ ^ 2 :=
+  (lipschitzSmoothOnWith_iff_inner_gradientWithin hs).mp h |>.2 x hx y hy
+
+/-- The quadratic upper bound on `f y` within a set, in terms of `gradientWithin`. -/
+theorem inner_gradientWithin_descent_le (h : LipschitzSmoothOnWith ℝ K f s)
+    (hs : UniqueDiffOn ℝ s) {x y : F} (hx : x ∈ s) (hy : y ∈ s) :
+    f y ≤ f x + ⟪gradientWithin f s x, y - x⟫ + K / 2 * ‖y - x‖ ^ 2 := by
+  rw [inner_gradientWithin_left, ← dist_eq_norm']
+  exact h.fderivWithin_descent_le hs hx hy
+
+/-- The quadratic lower bound on `f y` within a set, in terms of `gradientWithin`. -/
+theorem inner_gradientWithin_descent_ge (h : LipschitzSmoothOnWith ℝ K f s)
+    (hs : UniqueDiffOn ℝ s) {x y : F} (hx : x ∈ s) (hy : y ∈ s) :
+    f x + ⟪gradientWithin f s x, y - x⟫ - K / 2 * ‖y - x‖ ^ 2 ≤ f y := by
+  rw [inner_gradientWithin_left, ← dist_eq_norm']
+  exact h.fderivWithin_descent_ge hs hx hy
+
+/-- One-sided bound on the variation of `gradientWithin`. -/
+theorem inner_gradientWithin_sub_le (h : LipschitzSmoothOnWith ℝ K f s)
+    (hs : UniqueDiffOn ℝ s) {x y : F} (hx : x ∈ s) (hy : y ∈ s) :
+    ⟪gradientWithin f s y - gradientWithin f s x, y - x⟫ ≤ K * ‖y - x‖ ^ 2 := by
+  simp only [← dist_eq_norm', inner_sub_left, inner_gradientWithin_left, ← sub_apply]
+  exact h.fderivWithin_sub_apply_le hs hx hy
+
+end LipschitzSmoothOnWith
 
 /-! ### Cocoercivity -/
 
