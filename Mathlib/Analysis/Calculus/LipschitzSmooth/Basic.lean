@@ -15,18 +15,21 @@ field `𝕜` is **`K`-smooth** if the first-order Taylor remainder is bounded qu
 
 `‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ (K / 2) * (dist x y) ^ 2`
 
-for all `x, y`. The predicate uses `lineDeriv` so as not to presuppose Fréchet
-differentiability. It does, however, force the line derivative to be linear in its
-direction. Equivalent characterisations in `fderiv`, 1D `deriv`, and Hilbert-space
-gradient form live in the sibling files in this directory.
+for all `x, y`. We also introduce `LipschitzSmoothWithAt`, which requires the same
+two-point bound on some neighborhood of a given point. The predicates use `lineDeriv`
+so as not to presuppose Fréchet differentiability. They do, however, force the line
+derivative to be linear in its direction. Equivalent characterisations in `fderiv`,
+1D `deriv`, and Hilbert-space gradient form live in the sibling files in this directory.
 
-This two-sided (norm) form is orientation-agnostic (closed under `f ↦ -f`) — matching,
-when `𝕜 = ℝ` and `f` is real-valued, the textbook notion of L-smoothness (Lipschitz
-gradient, the class `C^{1,1}`). The one-sided descent bounds require an order
-on the codomain and are stated for real-valued `f` in a dedicated section.
+This two-sided (norm) form is orientation-agnostic (closed under `f ↦ -f`) and agrees,
+given Fréchet differentiability, with the standard quadratic-remainder formulation of
+L-smoothness. The one-sided descent bounds require an order on the codomain and are
+stated for real-valued `f` in a dedicated section.
 -/
 
 public section
+
+open scoped Topology
 
 section NormedField
 
@@ -38,11 +41,11 @@ variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜]
 if the first-order Taylor remainder is bounded quadratically:
 `‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ (K / 2) * (dist x y) ^ 2` for all `x, y`.
 
-The predicate is two-sided (norm), so closed under `f ↦ -f` and matching, when `𝕜 = ℝ`
-and `f` is real-valued, the textbook L-smoothness / `C^{1,1}` class. The `lineDeriv`
-form is the weakest possible underlying derivative form — the predicate implies
-line-differentiability everywhere (`LipschitzSmoothWith.hasLineDerivAt`) and makes
-the line derivative linear in its direction (`LipschitzSmoothWith.lineDerivLinearMap`).
+The predicate is two-sided (norm), so closed under `f ↦ -f`. Given Fréchet
+differentiability, it agrees with the standard quadratic-remainder formulation of
+L-smoothness. Without that assumption, it still implies line-differentiability everywhere
+(`LipschitzSmoothWith.hasLineDerivAt`) and makes the line derivative linear in its direction
+(`LipschitzSmoothWith.lineDerivLinearMap`).
 
 Equivalent characterisations in `fderiv`, `gradient`, and `deriv` form are
 provided in the sibling files, predicated on `Differentiable` where useful.
@@ -53,12 +56,65 @@ def LipschitzSmoothWith (𝕜 : Type*) {E F : Type*} [NontriviallyNormedField �
     (K : NNReal) (f : E → F) :=
   HasQuadraticLineRemainderWith 𝕜 (K / 2) f
 
+/-- A function is `K`-smooth at `x` if its two-point quadratic line-remainder bound holds
+uniformly for all pairs of points in some neighborhood of `x`.
+
+This is a neighborhood-wise condition, not merely a bound with the first point fixed at `x`. -/
+def LipschitzSmoothWithAt (𝕜 : Type*) {E F : Type*} [NontriviallyNormedField 𝕜]
+    [NormedAddCommGroup E] [NormedSpace 𝕜 E] [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+    (K : NNReal) (f : E → F) (x : E) :=
+  HasQuadraticLineRemainderWithAt 𝕜 (K / 2) f x
+
 theorem lipschitzSmoothWith_iff_lineDeriv {K : NNReal} {f : E → F} :
     LipschitzSmoothWith 𝕜 K f ↔
       ∀ x y : E, ‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ ≤ K / 2 * (dist x y) ^ 2 :=
   Iff.rfl
 
+theorem lipschitzSmoothWithAt_iff_lineDeriv {K : NNReal} {f : E → F} {x : E} :
+    LipschitzSmoothWithAt 𝕜 K f x ↔
+      ∃ s ∈ 𝓝 x, ∀ y ∈ s, ∀ z ∈ s,
+        ‖f z - f y - lineDeriv 𝕜 f y (z - y)‖ ≤ K / 2 * dist y z ^ 2 :=
+  Iff.rfl
+
 end NormedField
+
+namespace LipschitzSmoothWithAt
+
+section NormedField
+
+variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜]
+  [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+  [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+variable {K : NNReal} {f : E → F} {x : E}
+
+/-- The local quadratic line-remainder condition underlying `K`-smoothness at `x`. -/
+theorem hasQuadraticLineRemainderWithAt (h : LipschitzSmoothWithAt 𝕜 K f x) :
+    HasQuadraticLineRemainderWithAt 𝕜 (K / 2) f x :=
+  h
+
+/-- The line derivative at `x`, bundled as a linear map in its direction. -/
+@[expose]
+noncomputable def lineDerivLinearMap (h : LipschitzSmoothWithAt 𝕜 K f x) : E →ₗ[𝕜] F :=
+  h.hasQuadraticLineRemainderWithAt.lineDerivLinearMap
+
+@[simp]
+theorem lineDerivLinearMap_apply (h : LipschitzSmoothWithAt 𝕜 K f x) (v : E) :
+    h.lineDerivLinearMap v = lineDeriv 𝕜 f x v :=
+  rfl
+
+/-- The line derivative is additive in its direction. -/
+theorem lineDeriv_add (h : LipschitzSmoothWithAt 𝕜 K f x) (u v : E) :
+    lineDeriv 𝕜 f x (u + v) = lineDeriv 𝕜 f x u + lineDeriv 𝕜 f x v :=
+  h.lineDerivLinearMap.map_add u v
+
+/-- Neighborhood-wise `K`-smoothness at `x` implies line-differentiability at `x`. -/
+theorem hasLineDerivAt (h : LipschitzSmoothWithAt 𝕜 K f x) (v : E) :
+    HasLineDerivAt 𝕜 f (lineDeriv 𝕜 f x v) x v :=
+  h.hasQuadraticLineRemainderWithAt.hasLineDerivAt v
+
+end NormedField
+
+end LipschitzSmoothWithAt
 
 namespace LipschitzSmoothWith
 
@@ -73,6 +129,11 @@ variable {K : NNReal} {f : E → F}
 theorem hasQuadraticLineRemainderWith (h : LipschitzSmoothWith 𝕜 K f) :
     HasQuadraticLineRemainderWith 𝕜 (K / 2) f :=
   h
+
+/-- Global `K`-smoothness implies `K`-smoothness at every point. -/
+theorem lipschitzSmoothWithAt (h : LipschitzSmoothWith 𝕜 K f) (x : E) :
+    LipschitzSmoothWithAt 𝕜 K f x :=
+  h.hasQuadraticLineRemainderWith.hasQuadraticLineRemainderWithAt x
 
 /-- The two-sided quadratic bound on the first-order Taylor remainder, restated
 from the definition for dot notation. -/
@@ -94,7 +155,7 @@ theorem lineDeriv_apply_sub_norm_le (h : LipschitzSmoothWith 𝕜 K f) (x y : E)
 direction. -/
 @[expose]
 noncomputable def lineDerivLinearMap (h : LipschitzSmoothWith 𝕜 K f) (x : E) : E →ₗ[𝕜] F :=
-  IsLinearMap.mk' _ <| h.hasQuadraticLineRemainderWith.isLinearMap_lineDeriv x
+  (h.lipschitzSmoothWithAt x).lineDerivLinearMap
 
 @[simp]
 theorem lineDerivLinearMap_apply (h : LipschitzSmoothWith 𝕜 K f) (x v : E) :
@@ -104,7 +165,7 @@ theorem lineDerivLinearMap_apply (h : LipschitzSmoothWith 𝕜 K f) (x v : E) :
 /-- The line derivative of a `K`-smooth function is additive in its direction. -/
 theorem lineDeriv_add (h : LipschitzSmoothWith 𝕜 K f) (x u v : E) :
     lineDeriv 𝕜 f x (u + v) = lineDeriv 𝕜 f x u + lineDeriv 𝕜 f x v :=
-  (h.lineDerivLinearMap x).map_add u v
+  (h.lipschitzSmoothWithAt x).lineDeriv_add u v
 
 /-- `K`-smoothness implies line-differentiability: the actual line derivative
 exists at every `x, v` and equals `lineDeriv 𝕜 f x v`. The predicate bound
@@ -112,7 +173,7 @@ exists at every `x, v` and equals `lineDeriv 𝕜 f x v`. The predicate bound
 is `o(t)`. -/
 theorem hasLineDerivAt (h : LipschitzSmoothWith 𝕜 K f) (x v : E) :
     HasLineDerivAt 𝕜 f (lineDeriv 𝕜 f x v) x v :=
-  h.hasQuadraticLineRemainderWith.hasLineDerivAt x v
+  (h.lipschitzSmoothWithAt x).hasLineDerivAt v
 
 /-- A `K`-smooth function is line-differentiable everywhere. -/
 theorem lineDifferentiableAt (h : LipschitzSmoothWith 𝕜 K f) (x v : E) :

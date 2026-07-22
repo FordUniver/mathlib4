@@ -39,10 +39,11 @@ variable {K : NNReal} {f : 𝕜 → F}
 
 /-- A `K`-smooth function in one dimension is differentiable. -/
 theorem LipschitzSmoothWith.differentiable (h : LipschitzSmoothWith 𝕜 K f) :
-    Differentiable 𝕜 f :=
-  fun x => h.differentiableAt_of_continuous_lineDeriv x <| by
-    change Continuous ((h.lineDerivLinearMap x).toContinuousLinearMap₁ : 𝕜 → F)
-    exact (h.lineDerivLinearMap x).toContinuousLinearMap₁.continuous
+    Differentiable 𝕜 f := fun x => by
+  let hx := h.lipschitzSmoothWithAt x
+  refine (hx.hasFDerivAt ?_).differentiableAt
+  change Continuous (hx.lineDerivLinearMap.toContinuousLinearMap₁ : 𝕜 → F)
+  exact hx.lineDerivLinearMap.toContinuousLinearMap₁.continuous
 
 private theorem differentiable_of_deriv_bound
     (h : ∀ x y : 𝕜, ‖f y - f x - (y - x) • deriv f x‖ ≤ K / 2 * ‖y - x‖ ^ 2) :
