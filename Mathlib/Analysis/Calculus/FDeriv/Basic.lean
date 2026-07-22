@@ -852,6 +852,41 @@ theorem Asymptotics.IsBigO.hasFDerivAt {x₀ : E} {n : ℕ} (h : f =O[𝓝 x₀]
   rw [← nhdsWithin_univ] at h
   exact (h.hasFDerivWithinAt (mem_univ _) hn).hasFDerivAt_of_univ
 
+namespace LinearMap
+
+/-- An algebraic linear map giving a first-order approximation to a function continuous at the
+base point is continuous. -/
+theorem continuous_of_isLittleO_sub (L : E →ₗ[𝕜] F) (hf : ContinuousAt f x₀)
+    (hrem : (fun x ↦ f x - f x₀ - L (x - x₀)) =o[𝓝 x₀] fun x ↦ x - x₀) :
+    Continuous L := by
+  have hsub : Tendsto (fun x : E ↦ x - x₀) (𝓝 x₀) (𝓝 0) := by
+    have : ContinuousAt (fun x : E ↦ x - x₀) x₀ := by fun_prop
+    simpa using this.tendsto
+  have hrem₀ : Tendsto (fun x ↦ f x - f x₀ - L (x - x₀)) (𝓝 x₀) (𝓝 0) :=
+    hrem.trans_tendsto hsub
+  have hf₀ : Tendsto (fun x ↦ f x - f x₀) (𝓝 x₀) (𝓝 0) := by
+    simpa using hf.tendsto.sub_const (f x₀)
+  have hL : Tendsto (fun x ↦ L (x - x₀)) (𝓝 x₀) (𝓝 0) := by
+    convert hf₀.sub hrem₀ using 1
+    · funext x
+      module
+    · simp
+  apply continuous_of_tendsto_nhds_zero L
+  have hadd : Tendsto (fun y : E ↦ x₀ + y) (𝓝 0) (𝓝 x₀) := by
+    have : ContinuousAt (fun y : E ↦ x₀ + y) 0 := by fun_prop
+    simpa using this.tendsto
+  simpa [Function.comp_def] using hL.comp hadd
+
+/-- A function continuous at a point and admitting an algebraic linear first-order approximation
+there is Fréchet differentiable at that point. -/
+theorem differentiableAt_of_isLittleO_sub (L : E →ₗ[𝕜] F) (hf : ContinuousAt f x₀)
+    (hrem : (fun x ↦ f x - f x₀ - L (x - x₀)) =o[𝓝 x₀] fun x ↦ x - x₀) :
+    DifferentiableAt 𝕜 f x₀ := by
+  let L' : E →L[𝕜] F := ⟨L, L.continuous_of_isLittleO_sub hf hrem⟩
+  exact ⟨L', HasFDerivAt.of_isLittleO (by simpa [L'] using hrem)⟩
+
+end LinearMap
+
 theorem HasStrictFDerivAt.isTheta_sub (hf : HasStrictFDerivAt f f' x)
     (hf' : Topology.IsInducing f') :
     (fun p : E × E ↦ f p.1 - f p.2) =Θ[𝓝 (x, x)] (fun p ↦ p.1 - p.2) :=
