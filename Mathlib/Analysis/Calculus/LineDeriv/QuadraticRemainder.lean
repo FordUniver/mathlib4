@@ -73,16 +73,16 @@ theorem norm_image_lineMap_sub_lineMap_le {s : Set E}
     ‖f (lineMap x y c) - lineMap (f x) (f y) c‖ ≤
       C * (‖c‖ ^ 2 + ‖c‖) * dist x y ^ 2 := by
   let z := lineMap x y c
+  let R := fun y ↦ f y - f x - lineDeriv 𝕜 f x (y - x)
   calc
     ‖f z - lineMap (f x) (f y) c‖ =
-        ‖(f z - f x - lineDeriv 𝕜 f x (z - x)) -
-          c • (f y - f x - lineDeriv 𝕜 f x (y - x))‖ := by
+        ‖R z - c • R y‖ := by
+      simp only [R]
       congr 1
       rw [lineMap_apply_module]
       simp only [z, lineMap_apply_module', add_sub_cancel_right, lineDeriv_smul]
       module
-    _ ≤ ‖f z - f x - lineDeriv 𝕜 f x (z - x)‖ +
-        ‖c‖ * ‖f y - f x - lineDeriv 𝕜 f x (y - x)‖ := by
+    _ ≤ ‖R z‖ + ‖c‖ * ‖R y‖ := by
       rw [← norm_smul]; exact norm_sub_le _ _
     _ ≤ C * dist x z ^ 2 + ‖c‖ * (C * dist x y ^ 2) :=
       add_le_add (h x hx z hz)
