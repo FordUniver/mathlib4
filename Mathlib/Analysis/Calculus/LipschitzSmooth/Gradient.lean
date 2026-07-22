@@ -11,9 +11,9 @@ public import Mathlib.Analysis.Calculus.LipschitzSmooth.FDeriv
 /-!
 # Lipschitz smoothness on a Hilbert space via the gradient
 
-On a Hilbert space `F`, the `LipschitzSmoothWith` predicate admits a gradient-form
-characterisation. For differentiable `f`, `fderiv ℝ f x (y - x) = ⟪∇ f x, y - x⟫`
-via Riesz representation (`inner_gradient_left`), and the two-sided Taylor bound becomes
+On a Hilbert space `F`, the Lipschitz-smoothness predicates admit gradient-form
+characterisations. The identity `fderiv ℝ f x (y - x) = ⟪∇ f x, y - x⟫`
+follows from Riesz representation (`inner_gradient_left`), and the two-sided Taylor bound becomes
 `‖f y - f x - ⟪∇ f x, y - x⟫‖ ≤ K/2 · ‖y - x‖²`.
 
 This file also defines the **`CocoerciveWith K f`** predicate (the conclusion of the
@@ -28,37 +28,70 @@ variable {K : NNReal} {f : F → ℝ}
 
 open scoped Gradient RealInnerProductSpace
 
-theorem lipschitzSmoothWith_iff_inner_gradient (hf : Differentiable ℝ f) :
+theorem lipschitzSmoothOnWith_iff_inner_gradient {s : Set F} :
+    LipschitzSmoothOnWith ℝ K f s ↔
+      (∀ x ∈ s, DifferentiableAt ℝ f x) ∧
+        ∀ x ∈ s, ∀ y ∈ s,
+          ‖f y - f x - ⟪∇ f x, y - x⟫‖ ≤ K / 2 * ‖y - x‖ ^ 2 := by
+  rw [lipschitzSmoothOnWith_iff_fderiv]
+  refine and_congr_right fun _ ↦ ?_
+  simp only [inner_gradient_left, dist_eq_norm']
+
+theorem lipschitzSmoothWith_iff_inner_gradient :
     LipschitzSmoothWith ℝ K f ↔
       ∀ x y : F, ‖f y - f x - ⟪∇ f x, y - x⟫‖ ≤ K / 2 * ‖y - x‖ ^ 2 := by
-  rw [lipschitzSmoothWith_iff_fderiv hf]
-  refine forall_congr' fun x => forall_congr' fun y => ?_
-  rw [inner_gradient_left, dist_eq_norm']
+  rw [lipschitzSmoothWith_iff_fderiv_norm_le]
+  simp only [inner_gradient_left, dist_eq_norm']
+
+namespace LipschitzSmoothOnWith
+
+variable {s : Set F}
+
+theorem inner_gradient_norm_le (h : LipschitzSmoothOnWith ℝ K f s)
+    {x : F} (hx : x ∈ s) {y : F} (hy : y ∈ s) :
+    ‖f y - f x - ⟪∇ f x, y - x⟫‖ ≤ K / 2 * ‖y - x‖ ^ 2 :=
+  (lipschitzSmoothOnWith_iff_inner_gradient.mp h).2 x hx y hy
+
+theorem inner_gradient_descent_le (h : LipschitzSmoothOnWith ℝ K f s)
+    {x : F} (hx : x ∈ s) {y : F} (hy : y ∈ s) :
+    f y ≤ f x + ⟪∇ f x, y - x⟫ + K / 2 * ‖y - x‖ ^ 2 := by
+  rw [inner_gradient_left, ← dist_eq_norm']
+  exact h.fderiv_descent_le hx hy
+
+theorem inner_gradient_descent_ge (h : LipschitzSmoothOnWith ℝ K f s)
+    {x : F} (hx : x ∈ s) {y : F} (hy : y ∈ s) :
+    f x + ⟪∇ f x, y - x⟫ - K / 2 * ‖y - x‖ ^ 2 ≤ f y := by
+  rw [inner_gradient_left, ← dist_eq_norm']
+  exact h.fderiv_descent_ge hx hy
+
+theorem inner_gradient_sub_le (h : LipschitzSmoothOnWith ℝ K f s)
+    {x : F} (hx : x ∈ s) {y : F} (hy : y ∈ s) :
+    ⟪∇ f y - ∇ f x, y - x⟫ ≤ K * ‖y - x‖ ^ 2 := by
+  simp only [← dist_eq_norm', inner_sub_left, inner_gradient_left, ← sub_apply]
+  exact h.fderiv_sub_apply_le hx hy
+
+end LipschitzSmoothOnWith
 
 namespace LipschitzSmoothWith
 
-theorem inner_gradient_norm_le (h : LipschitzSmoothWith ℝ K f) (x y : F)
-    (hf : DifferentiableAt ℝ f x) :
-    ‖f y - f x - ⟪∇ f x, y - x⟫‖ ≤ K / 2 * ‖y - x‖ ^ 2 := by
-  simpa only [inner_gradient_left, dist_eq_norm'] using h.fderiv_norm_le x y hf
+theorem inner_gradient_norm_le (h : LipschitzSmoothWith ℝ K f) (x y : F) :
+    ‖f y - f x - ⟪∇ f x, y - x⟫‖ ≤ K / 2 * ‖y - x‖ ^ 2 :=
+  lipschitzSmoothWith_iff_inner_gradient.mp h x y
 
-theorem inner_gradient_descent_le (h : LipschitzSmoothWith ℝ K f) (x y : F)
-    (hf : DifferentiableAt ℝ f x) :
+theorem inner_gradient_descent_le (h : LipschitzSmoothWith ℝ K f) (x y : F) :
     f y ≤ f x + ⟪∇ f x, y - x⟫ + K / 2 * ‖y - x‖ ^ 2 := by
   rw [inner_gradient_left, ← dist_eq_norm']
-  exact h.fderiv_descent_le x y hf
+  exact h.fderiv_descent_le x y
 
-theorem inner_gradient_descent_ge (h : LipschitzSmoothWith ℝ K f) (x y : F)
-    (hf : DifferentiableAt ℝ f x) :
+theorem inner_gradient_descent_ge (h : LipschitzSmoothWith ℝ K f) (x y : F) :
     f x + ⟪∇ f x, y - x⟫ - K / 2 * ‖y - x‖ ^ 2 ≤ f y := by
   rw [inner_gradient_left, ← dist_eq_norm']
-  exact h.fderiv_descent_ge x y hf
+  exact h.fderiv_descent_ge x y
 
-theorem inner_gradient_sub_le (h : LipschitzSmoothWith ℝ K f) (x y : F)
-    (hfx : DifferentiableAt ℝ f x) (hfy : DifferentiableAt ℝ f y) :
+theorem inner_gradient_sub_le (h : LipschitzSmoothWith ℝ K f) (x y : F) :
     ⟪∇ f y - ∇ f x, y - x⟫ ≤ K * ‖y - x‖ ^ 2 := by
   simp only [← dist_eq_norm', inner_sub_left, inner_gradient_left, ← sub_apply]
-  exact h.fderiv_sub_apply_le x y hfx hfy
+  exact h.fderiv_sub_apply_le x y
 
 end LipschitzSmoothWith
 

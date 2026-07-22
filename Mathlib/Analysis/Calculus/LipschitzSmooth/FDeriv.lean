@@ -5,140 +5,137 @@ Authors: Christoph Spiegel
 -/
 module
 
-public import Mathlib.Analysis.Calculus.FDeriv.Basic
 public import Mathlib.Analysis.Calculus.LipschitzSmooth.Basic
-public import Mathlib.LinearAlgebra.FiniteDimensional.Defs
-import Mathlib.Topology.Algebra.Module.FiniteDimension
+import Mathlib.Analysis.Asymptotics.Lemmas
 
 /-!
-# Lipschitz smoothness via the Fréchet derivative
+# Quantitative consequences of Lipschitz smoothness
 
-Fréchet-derivative restatements of the `LipschitzSmoothWith` predicate for
-`f : E → F`. For differentiable `f`, `lineDeriv 𝕜 f x v = fderiv 𝕜 f x v`
-pointwise, and the predicate is equivalent to the two-sided Taylor bound stated
-in `fderiv` form. Neighborhood-wise `K`-smoothness at a point makes continuity there
-equivalent to Fréchet differentiability. In finite-dimensional spaces over a complete
-field, the algebraic line-derivative map is automatically continuous, so no continuity
-hypothesis is needed. The one-sided descent bounds require an order on the codomain and
-are stated for real-valued `f` in a dedicated section.
+This file develops the quantitative Fréchet-derivative API for `LipschitzSmoothOnWith` and
+`LipschitzSmoothWith`: variation bounds for the derivative and, for real-valued functions, the
+upper and lower quadratic bounds usually called the descent lemma and, sometimes, the ascent
+lemma.
 -/
 
 public section
 
-section NormedField
+open Asymptotics Filter
+open scoped Topology
 
-variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace 𝕜 E]
-variable {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
-variable {K : NNReal} {f : E → F}
-
-theorem lipschitzSmoothWith_iff_fderiv (hf : Differentiable 𝕜 f) :
-    LipschitzSmoothWith 𝕜 K f ↔
-      ∀ x y : E, ‖f y - f x - fderiv 𝕜 f x (y - x)‖ ≤ K / 2 * (dist x y) ^ 2 := by
-  rw [lipschitzSmoothWith_iff_lineDeriv]
-  refine forall_congr' fun x => forall_congr' fun y => ?_
-  rw [(hf x).lineDeriv_eq_fderiv]
-
-end NormedField
-
-namespace LipschitzSmoothWithAt
-
-section NormedField
-
-variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace 𝕜 E]
-variable {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
-variable {K : NNReal} {f : E → F} {x : E}
-
-/-- If the linear line-derivative map is continuous, then it is the Fréchet derivative. -/
-theorem hasFDerivAt (h : LipschitzSmoothWithAt 𝕜 K f x)
-    (hcont : Continuous h.lineDerivLinearMap) :
-    HasFDerivAt f ⟨h.lineDerivLinearMap, hcont⟩ x :=
-  h.hasQuadraticLineRemainderWithAt.hasFDerivAt hcont
-
-/-- Under neighborhood-wise `K`-smoothness, Fréchet differentiability at `x` is equivalent to
-continuity at `x`. -/
-theorem differentiableAt_iff_continuousAt (h : LipschitzSmoothWithAt 𝕜 K f x) :
-    DifferentiableAt 𝕜 f x ↔ ContinuousAt f x :=
-  h.hasQuadraticLineRemainderWithAt.differentiableAt_iff_continuousAt
-
-/-- A function that is `K`-smooth at `x` on a finite-dimensional space over a complete field is
-Fréchet differentiable at `x`. -/
-theorem differentiableAt_of_finiteDimensional [CompleteSpace 𝕜]
-    [FiniteDimensional 𝕜 E] (h : LipschitzSmoothWithAt 𝕜 K f x) :
-    DifferentiableAt 𝕜 f x :=
-  (h.hasFDerivAt h.lineDerivLinearMap.continuous_of_finiteDimensional).differentiableAt
-
-end NormedField
-
-end LipschitzSmoothWithAt
+variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜]
+  [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+  [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+variable {K : NNReal} {f : E → F} {s : Set E}
 
 namespace LipschitzSmoothWith
 
-section NormedField
+/-- A global quadratic bound written using `fderiv` already forces Fréchet differentiability,
+and hence gives Lipschitz smoothness. -/
+theorem of_fderiv_norm_le
+    (h : ∀ x y : E,
+      ‖f y - f x - fderiv 𝕜 f x (y - x)‖ ≤ K / 2 * dist x y ^ 2) :
+    LipschitzSmoothWith 𝕜 K f := by
+  apply (lipschitzSmoothWith_iff_fderiv 𝕜).mpr
+  refine ⟨fun x ↦ ?_, h⟩
+  refine (HasFDerivAt.of_isLittleO (f' := fderiv 𝕜 f x) ?_).differentiableAt
+  have hbigO : (fun y ↦ f y - f x - fderiv 𝕜 f x (y - x)) =O[𝓝 x]
+      fun y ↦ ‖y - x‖ ^ 2 := by
+    refine IsBigO.of_bound (K / 2) (Eventually.of_forall fun y ↦ ?_)
+    simpa only [dist_eq_norm, norm_sub_rev, Real.norm_of_nonneg (sq_nonneg _)] using h x y
+  exact hbigO.trans_isLittleO (isLittleO_pow_sub_sub x one_lt_two)
 
-variable {𝕜 : Type*} [NontriviallyNormedField 𝕜]
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace 𝕜 E]
-variable {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
-variable {K : NNReal} {f : E → F}
+end LipschitzSmoothWith
 
-/-- For a globally `K`-smooth function, Fréchet differentiability is equivalent to continuity. -/
-theorem differentiable_iff_continuous (h : LipschitzSmoothWith 𝕜 K f) :
-    Differentiable 𝕜 f ↔ Continuous f := by
-  refine ⟨Differentiable.continuous, fun hf x ↦ ?_⟩
-  exact (h.lipschitzSmoothWithAt x).differentiableAt_iff_continuousAt.mpr hf.continuousAt
+/-- The explicit differentiability field in `LipschitzSmoothWith` is mathematically redundant:
+the global quadratic `fderiv` bound already implies it. -/
+theorem lipschitzSmoothWith_iff_fderiv_norm_le :
+    LipschitzSmoothWith 𝕜 K f ↔
+      ∀ x y : E,
+        ‖f y - f x - fderiv 𝕜 f x (y - x)‖ ≤ K / 2 * dist x y ^ 2 :=
+  ⟨fun h ↦ h.fderiv_norm_le, LipschitzSmoothWith.of_fderiv_norm_le⟩
 
-/-- A `K`-smooth function on a finite-dimensional space over a complete field is Fréchet
-differentiable. -/
-theorem differentiable_of_finiteDimensional [CompleteSpace 𝕜]
-    [FiniteDimensional 𝕜 E] (h : LipschitzSmoothWith 𝕜 K f) : Differentiable 𝕜 f :=
-  fun x => (h.lipschitzSmoothWithAt x).differentiableAt_of_finiteDimensional
+namespace LipschitzSmoothOnWith
 
-theorem fderiv_norm_le (h : LipschitzSmoothWith 𝕜 K f) (x y : E)
-    (hf : DifferentiableAt 𝕜 f x) :
-    ‖f y - f x - fderiv 𝕜 f x (y - x)‖ ≤ K / 2 * (dist x y) ^ 2 := by
-  rw [← hf.lineDeriv_eq_fderiv]
-  exact h.lineDeriv_norm_le x y
+/-- Two-sided bound on the variation of the Fréchet derivative along `y - x`. -/
+theorem fderiv_apply_sub_norm_le (h : LipschitzSmoothOnWith 𝕜 K f s)
+    {x : E} (hx : x ∈ s) {y : E} (hy : y ∈ s) :
+    ‖fderiv 𝕜 f y (y - x) - fderiv 𝕜 f x (y - x)‖ ≤ K * dist x y ^ 2 := by
+  have hyx := h.fderiv_norm_le hy hx
+  rw [← neg_sub y x, map_neg, sub_neg_eq_add, dist_comm] at hyx
+  have hsum := (norm_add_le _ _).trans (add_le_add hyx (h.fderiv_norm_le hx hy))
+  rw [show f x - f y + fderiv 𝕜 f y (y - x) +
+      (f y - f x - fderiv 𝕜 f x (y - x)) =
+        fderiv 𝕜 f y (y - x) - fderiv 𝕜 f x (y - x) by abel] at hsum
+  linarith
 
-theorem fderiv_apply_sub_norm_le (h : LipschitzSmoothWith 𝕜 K f) (x y : E)
-    (hfx : DifferentiableAt 𝕜 f x) (hfy : DifferentiableAt 𝕜 f y) :
-    ‖fderiv 𝕜 f y (y - x) - fderiv 𝕜 f x (y - x)‖ ≤ K * (dist x y) ^ 2 := by
-  rw [← hfy.lineDeriv_eq_fderiv, ← hfx.lineDeriv_eq_fderiv]
-  exact h.lineDeriv_apply_sub_norm_le x y
+end LipschitzSmoothOnWith
 
-end NormedField
+namespace LipschitzSmoothWith
+
+/-- Two-sided bound on the variation of the Fréchet derivative along `y - x`. -/
+theorem fderiv_apply_sub_norm_le (h : LipschitzSmoothWith 𝕜 K f) (x y : E) :
+    ‖fderiv 𝕜 f y (y - x) - fderiv 𝕜 f x (y - x)‖ ≤ K * dist x y ^ 2 :=
+  (h.lipschitzSmoothOnWith Set.univ).fderiv_apply_sub_norm_le (Set.mem_univ x) (Set.mem_univ y)
+
+end LipschitzSmoothWith
 
 /-! ### Real-valued functions -/
 
-section Real
+namespace LipschitzSmoothOnWith
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+variable {K : NNReal} {f : E → ℝ} {s : Set E}
+
+/-- The quadratic upper bound on `f y`, traditionally called the *descent lemma*. -/
+theorem fderiv_descent_le (h : LipschitzSmoothOnWith ℝ K f s)
+    {x : E} (hx : x ∈ s) {y : E} (hy : y ∈ s) :
+    f y ≤ f x + fderiv ℝ f x (y - x) + K / 2 * dist x y ^ 2 := by
+  linarith [(abs_le.mp (h.fderiv_norm_le hx hy)).2]
+
+/-- The quadratic lower bound on `f y`, sometimes referred to as the *ascent lemma*. -/
+theorem fderiv_descent_ge (h : LipschitzSmoothOnWith ℝ K f s)
+    {x : E} (hx : x ∈ s) {y : E} (hy : y ∈ s) :
+    f x + fderiv ℝ f x (y - x) - K / 2 * dist x y ^ 2 ≤ f y := by
+  linarith [(abs_le.mp (h.fderiv_norm_le hx hy)).1]
+
+/-- One-sided bound on the variation of the Fréchet derivative along `y - x`. -/
+theorem fderiv_apply_sub_le (h : LipschitzSmoothOnWith ℝ K f s)
+    {x : E} (hx : x ∈ s) {y : E} (hy : y ∈ s) :
+    fderiv ℝ f y (y - x) - fderiv ℝ f x (y - x) ≤ K * dist x y ^ 2 :=
+  le_of_abs_le (h.fderiv_apply_sub_norm_le hx hy)
+
+/-- The one-sided variation bound in functional form. -/
+theorem fderiv_sub_apply_le (h : LipschitzSmoothOnWith ℝ K f s)
+    {x : E} (hx : x ∈ s) {y : E} (hy : y ∈ s) :
+    (fderiv ℝ f y - fderiv ℝ f x) (y - x) ≤ K * dist x y ^ 2 := by
+  rw [sub_apply]
+  exact h.fderiv_apply_sub_le hx hy
+
+end LipschitzSmoothOnWith
+
+namespace LipschitzSmoothWith
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 variable {K : NNReal} {f : E → ℝ}
 
-theorem fderiv_descent_le (h : LipschitzSmoothWith ℝ K f) (x y : E)
-    (hf : DifferentiableAt ℝ f x) :
-    f y ≤ f x + fderiv ℝ f x (y - x) + K / 2 * (dist x y) ^ 2 := by
-  rw [← hf.lineDeriv_eq_fderiv]
-  exact h.lineDeriv_descent_le x y
+/-- The quadratic upper bound on `f y`, traditionally called the *descent lemma*. -/
+theorem fderiv_descent_le (h : LipschitzSmoothWith ℝ K f) (x y : E) :
+    f y ≤ f x + fderiv ℝ f x (y - x) + K / 2 * dist x y ^ 2 :=
+  (h.lipschitzSmoothOnWith Set.univ).fderiv_descent_le (Set.mem_univ x) (Set.mem_univ y)
 
-theorem fderiv_descent_ge (h : LipschitzSmoothWith ℝ K f) (x y : E)
-    (hf : DifferentiableAt ℝ f x) :
-    f x + fderiv ℝ f x (y - x) - K / 2 * (dist x y) ^ 2 ≤ f y := by
-  rw [← hf.lineDeriv_eq_fderiv]
-  exact h.lineDeriv_descent_ge x y
+/-- The quadratic lower bound on `f y`, sometimes referred to as the *ascent lemma*. -/
+theorem fderiv_descent_ge (h : LipschitzSmoothWith ℝ K f) (x y : E) :
+    f x + fderiv ℝ f x (y - x) - K / 2 * dist x y ^ 2 ≤ f y :=
+  (h.lipschitzSmoothOnWith Set.univ).fderiv_descent_ge (Set.mem_univ x) (Set.mem_univ y)
 
-theorem fderiv_apply_sub_le (h : LipschitzSmoothWith ℝ K f) (x y : E)
-    (hfx : DifferentiableAt ℝ f x) (hfy : DifferentiableAt ℝ f y) :
-    fderiv ℝ f y (y - x) - fderiv ℝ f x (y - x) ≤ K * (dist x y) ^ 2 := by
-  rw [← hfy.lineDeriv_eq_fderiv, ← hfx.lineDeriv_eq_fderiv]
-  exact h.lineDeriv_apply_sub_le x y
+/-- One-sided bound on the variation of the Fréchet derivative along `y - x`. -/
+theorem fderiv_apply_sub_le (h : LipschitzSmoothWith ℝ K f) (x y : E) :
+    fderiv ℝ f y (y - x) - fderiv ℝ f x (y - x) ≤ K * dist x y ^ 2 :=
+  (h.lipschitzSmoothOnWith Set.univ).fderiv_apply_sub_le (Set.mem_univ x) (Set.mem_univ y)
 
-theorem fderiv_sub_apply_le (h : LipschitzSmoothWith ℝ K f) (x y : E)
-    (hfx : DifferentiableAt ℝ f x) (hfy : DifferentiableAt ℝ f y) :
-    (fderiv ℝ f y - fderiv ℝ f x) (y - x) ≤ K * (dist x y) ^ 2 := by
-  rw [sub_apply]
-  exact h.fderiv_apply_sub_le x y hfx hfy
-
-end Real
+/-- The one-sided variation bound in functional form. -/
+theorem fderiv_sub_apply_le (h : LipschitzSmoothWith ℝ K f) (x y : E) :
+    (fderiv ℝ f y - fderiv ℝ f x) (y - x) ≤ K * dist x y ^ 2 :=
+  (h.lipschitzSmoothOnWith Set.univ).fderiv_sub_apply_le (Set.mem_univ x) (Set.mem_univ y)
 
 end LipschitzSmoothWith
