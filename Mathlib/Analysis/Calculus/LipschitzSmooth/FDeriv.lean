@@ -16,9 +16,8 @@ import Mathlib.MeasureTheory.Integral.CurveIntegral.Basic
 
 This file develops quantitative consequences of Lipschitz smoothness in terms of the Fréchet
 derivative: variation along a chord and, for real-valued functions, the upper and lower quadratic
-bounds usually called the descent lemma and, sometimes, the ascent lemma. It also proves the
-converse descent lemma: a differentiable function with Lipschitz Fréchet derivative is Lipschitz
-smooth.
+bounds usually called the descent lemma and, sometimes, the ascent lemma. It also proves that a
+differentiable function with Lipschitz Fréchet derivative is Lipschitz smooth.
 -/
 
 public section

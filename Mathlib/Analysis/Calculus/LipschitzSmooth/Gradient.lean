@@ -54,15 +54,6 @@ theorem CocoerciveWith.lipschitzWith_gradient (h : CocoerciveWith K f) : Lipschi
     nlinarith [h x y, mul_nonneg K.coe_nonneg (norm_nonneg (y - x)),
       mul_le_mul_of_nonneg_left (real_inner_le_norm (∇ f y - ∇ f x) (y - x)) K.coe_nonneg]
 
-/-! ### Riesz isomorphism for Lipschitz constants -/
-
-/-- The Riesz isomorphism identifies the Lipschitz constant of the Fréchet derivative with
-that of the gradient: `LipschitzWith K (fderiv ℝ f) ↔ LipschitzWith K (∇ f)`. Unconditional —
-the gradient is *defined* via Riesz from the fderiv, and Riesz is an isometry. -/
-theorem lipschitzWith_fderiv_iff_lipschitzWith_gradient :
-    LipschitzWith K (fderiv ℝ f) ↔ LipschitzWith K (∇ f) :=
-  toDual_comp_gradient (𝕜 := ℝ) (f := f) ▸ (toDual ℝ F).isometry.lipschitzWith_iff K
-
 /-! ### Descent lemma (Hilbert form) -/
 
 /-- **Descent lemma (Hilbert form).** If `f : F → ℝ` is differentiable on a Hilbert space
