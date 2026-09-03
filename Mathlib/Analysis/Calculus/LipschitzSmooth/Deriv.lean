@@ -6,74 +6,39 @@ Authors: Christoph Spiegel
 module
 
 public import Mathlib.Analysis.Calculus.Deriv.Basic
-public import Mathlib.Analysis.Calculus.LipschitzSmooth.FDeriv
+public import Mathlib.Analysis.Calculus.LipschitzSmooth.Basic
+
+import Mathlib.Analysis.Calculus.LipschitzSmooth.FDeriv
+import Mathlib.Analysis.Normed.Operator.Mul
 
 /-!
-# Lipschitz smoothness in 1D via the derivative
+# Lipschitz smoothness in one dimension
 
-For a `K`-smooth function `f : ℝ → F`, the Taylor bound takes its 1D form
+For `f : 𝕜 → F`, the Fréchet-derivative formulation of Lipschitz smoothness reduces to the usual
+derivative bound
 
-`‖f y - f x - (y - x) • deriv f x‖ ≤ K/2 · (y - x)²`,
-
-lifted from the Fréchet-derivative form in
-`Mathlib.Analysis.Calculus.LipschitzSmooth.FDeriv` via `fderiv_eq_smul_deriv`.
-For real-valued `f` the one-sided bounds take their classical forms
-
-`f y ≤ f x + deriv f x * (y - x) + K/2 · (y - x)²`,
-`(deriv f y - deriv f x) * (y - x) ≤ K · (y - x)²`,
-
-with the scalar action spelled as multiplication (`smul_eq_mul` bridges the two).
+`‖f y - f x - (y - x) • deriv f x‖ ≤ K / 2 * ‖y - x‖ ^ 2`.
 -/
 
 public section
 
-variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
-variable {K : NNReal} {f : ℝ → F}
+variable {𝕜 F : Type*} [NontriviallyNormedField 𝕜]
+  [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+variable {K : NNReal} {f : 𝕜 → F}
 
-theorem lipschitzSmoothWith_iff_deriv (hf : Differentiable ℝ f) : LipschitzSmoothWith K f ↔
-    ∀ x y : ℝ, ‖f y - f x - (y - x) • deriv f x‖ ≤ K / 2 * (y - x) ^ 2 := by
-  rw [lipschitzSmoothWith_iff_fderiv hf]
-  refine forall_congr' fun x => forall_congr' fun y => ?_
-  rw [fderiv_eq_smul_deriv, dist_comm, Real.dist_eq, sq_abs]
-
-namespace LipschitzSmoothWith
-
-theorem deriv_norm_le (h : LipschitzSmoothWith K f) (x y : ℝ) (hf : DifferentiableAt ℝ f x) :
-    ‖f y - f x - (y - x) • deriv f x‖ ≤ K / 2 * (y - x) ^ 2 := by
-  simpa only [fderiv_eq_smul_deriv, dist_comm x y, Real.dist_eq, sq_abs]
-    using h.fderiv_norm_le x y hf
-
-/-! ### Real-valued functions -/
-
-section Real
-
-variable {f : ℝ → ℝ}
-
-theorem deriv_descent_le (h : LipschitzSmoothWith K f) (x y : ℝ) (hf : DifferentiableAt ℝ f x) :
-    f y ≤ f x + deriv f x * (y - x) + K / 2 * (y - x) ^ 2 := by
-  simpa only [fderiv_eq_deriv_mul, dist_comm x y, Real.dist_eq, sq_abs]
-    using h.fderiv_descent_le x y hf
-
-theorem deriv_descent_ge (h : LipschitzSmoothWith K f) (x y : ℝ) (hf : DifferentiableAt ℝ f x) :
-    f x + deriv f x * (y - x) - K / 2 * (y - x) ^ 2 ≤ f y := by
-  simpa only [fderiv_eq_deriv_mul, dist_comm x y, Real.dist_eq, sq_abs]
-    using h.fderiv_descent_ge x y hf
-
-theorem deriv_sub_mul_le (h : LipschitzSmoothWith K f) (x y : ℝ)
-    (hfx : DifferentiableAt ℝ f x) (hfy : DifferentiableAt ℝ f y) :
-    (deriv f y - deriv f x) * (y - x) ≤ K * (y - x) ^ 2 := by
-  simpa only [sub_apply, fderiv_eq_deriv_mul, ← sub_mul, dist_comm x y, Real.dist_eq, sq_abs]
-    using h.fderiv_sub_apply_le x y hfx hfy
-
-end Real
-
-end LipschitzSmoothWith
+theorem lipschitzSmoothWith_iff_deriv :
+    LipschitzSmoothWith 𝕜 K f ↔ Differentiable 𝕜 f ∧
+      ∀ x y : 𝕜,
+        ‖f y - f x - (y - x) • deriv f x‖ ≤ K / 2 * ‖y - x‖ ^ 2 := by
+  constructor <;>
+    exact fun ⟨hf, hbound⟩ ↦ ⟨hf, by
+      simpa only [fderiv_eq_smul_deriv, dist_eq_norm, norm_sub_rev] using hbound⟩
 
 /-! ### Lipschitz constants of `fderiv` versus `deriv` -/
 
 section Real
 
-variable {f : ℝ → ℝ}
+variable {K : NNReal} {f : ℝ → ℝ}
 
 /-- For `f : ℝ → ℝ`, the Lipschitz constants of `fderiv ℝ f` and `deriv f` coincide:
 `deriv f` is the composition of `fderiv ℝ f` with the isometry
@@ -82,12 +47,14 @@ theorem lipschitzWith_fderiv_iff_lipschitzWith_deriv :
     LipschitzWith K (fderiv ℝ f) ↔ LipschitzWith K (deriv f) :=
   ((ContinuousLinearMap.toSpanSingletonLIE ℝ ℝ).symm.isometry.lipschitzWith_iff K).symm
 
-/-! ### Descent lemma (1D) -/
+/-! ### Descent lemma -/
 
-/-- **Descent lemma (1D).** If `f : ℝ → ℝ` is differentiable and its derivative is
+/-- **Descent lemma in one dimension.** If `f : ℝ → ℝ` is differentiable and its derivative is
 `K`-Lipschitz, then `f` is `K`-smooth. -/
 theorem Differentiable.lipschitzSmoothWith_of_lipschitzWith_deriv
-    (hf : Differentiable ℝ f) (hL : LipschitzWith K (deriv f)) : LipschitzSmoothWith K f :=
-  hf.lipschitzSmoothWith_of_lipschitzWith (lipschitzWith_fderiv_iff_lipschitzWith_deriv.mpr hL)
+    (hf : Differentiable ℝ f) (hL : LipschitzWith K (deriv f)) :
+    LipschitzSmoothWith ℝ K f :=
+  hf.lipschitzSmoothWith_of_lipschitzWith
+    (lipschitzWith_fderiv_iff_lipschitzWith_deriv.mpr hL)
 
 end Real
