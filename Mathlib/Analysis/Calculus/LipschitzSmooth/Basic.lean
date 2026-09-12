@@ -143,6 +143,84 @@ theorem LipschitzSmoothWith.fderiv_apply_sub_norm_le (h : LipschitzSmoothWith �
 
 end NormedField
 
+section RealNormedSpace
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F]
+variable {K : NNReal} {f : E → F}
+
+private theorem LipschitzSmoothWith.norm_fderiv_sub_apply_le_aux
+    (h : LipschitzSmoothWith ℝ K f) (x y v : E) :
+    ‖(fderiv ℝ f y - fderiv ℝ f x) v‖ ≤
+      K / 4 * (‖y - x + v‖ ^ 2 + ‖y - x - v‖ ^ 2) := by
+  let p := (1 / 2 : ℝ) • (x + y + v)
+  let q := (1 / 2 : ℝ) • (x + y + -v)
+  have hpq : p - q = v := by dsimp [p, q]; module
+  have hdist (a b c : E) : dist a ((1 / 2 : ℝ) • (a + b + c)) =
+      1 / 2 * ‖b - a + c‖ := by
+    rw [dist_eq_norm', show (1 / 2 : ℝ) • (a + b + c) - a =
+      (1 / 2 : ℝ) • (b - a + c) by module, norm_smul]
+    norm_num
+  convert norm_sub_le_of_le
+    (norm_sub_le_of_le (h.fderiv_norm_le x p) (h.fderiv_norm_le x q))
+    (norm_sub_le_of_le (h.fderiv_norm_le y p) (h.fderiv_norm_le y q)) using 1
+  · rw [← hpq, sub_apply]
+    simp only [map_sub]
+    congr 1
+    abel
+  · simp only [p, q, hdist]
+    rw [add_comm x y]
+    simp only [hdist, show x - y + v = -(y - x + -v) by abel,
+      show x - y + -v = -(y - x + v) by abel, norm_neg]
+    rw [← sub_eq_add_neg]
+    ring
+
+theorem LipschitzSmoothWith.lipschitzWith_fderiv_two_mul (h : LipschitzSmoothWith ℝ K f) :
+    LipschitzWith (2 * K) (fderiv ℝ f) := by
+  refine LipschitzWith.of_dist_le_mul fun x y ↦ ?_
+  obtain rfl | hxy := eq_or_ne x y
+  · simp
+  rw [dist_eq_norm', dist_eq_norm']
+  have hd : 0 < ‖y - x‖ := norm_pos_iff.mpr (sub_ne_zero.mpr hxy.symm)
+  refine ContinuousLinearMap.opNorm_le_of_unit_norm (by positivity) fun v hv ↦ ?_
+  apply (mul_le_mul_iff_right₀ hd).mp
+  calc
+    ‖y - x‖ * ‖(fderiv ℝ f y - fderiv ℝ f x) v‖ =
+        ‖(fderiv ℝ f y - fderiv ℝ f x) (‖y - x‖ • v)‖ := by simp [norm_smul]
+    _ ≤ K / 4 * (‖y - x + ‖y - x‖ • v‖ ^ 2 + ‖y - x - ‖y - x‖ • v‖ ^ 2) :=
+      h.norm_fderiv_sub_apply_le_aux x y _
+    _ ≤ K / 4 * ((‖y - x‖ + ‖‖y - x‖ • v‖) ^ 2 +
+        (‖y - x‖ + ‖‖y - x‖ • v‖) ^ 2) := by
+      gcongr
+      · exact norm_add_le _ _
+      · exact norm_sub_le _ _
+    _ = ‖y - x‖ * (↑(2 * K) * ‖y - x‖) := by
+      norm_num [norm_smul, hv]
+      ring
+
+end RealNormedSpace
+
+section RealInnerProductSpace
+
+variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F]
+variable {K : NNReal} {f : E → F}
+
+theorem LipschitzSmoothWith.lipschitzWith_fderiv (h : LipschitzSmoothWith ℝ K f) :
+    LipschitzWith K (fderiv ℝ f) := by
+  refine LipschitzWith.of_dist_le_mul fun x y ↦ ?_
+  obtain rfl | hxy := eq_or_ne x y
+  · simp
+  rw [dist_eq_norm', dist_eq_norm']
+  have hd : 0 < ‖y - x‖ := norm_pos_iff.mpr (sub_ne_zero.mpr hxy.symm)
+  refine ContinuousLinearMap.opNorm_le_of_unit_norm (by positivity) fun v hv ↦ ?_
+  apply (mul_le_mul_iff_right₀ hd).mp
+  convert! h.norm_fderiv_sub_apply_le_aux x y (‖y - x‖ • v) using 1 <;>
+    norm_num [norm_smul, hv, parallelogram_law_with_norm ℝ]
+  ring
+
+end RealInnerProductSpace
+
 namespace LipschitzSmoothWith
 
 /-! ### Real-valued functions -/
