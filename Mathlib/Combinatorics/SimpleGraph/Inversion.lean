@@ -5,19 +5,22 @@ Authors: Christoph Spiegel
 -/
 module
 
+public import Mathlib.Combinatorics.Enumerative.InclusionExclusion
 public import Mathlib.Combinatorics.SimpleGraph.Finite
 public import Mathlib.Combinatorics.SimpleGraph.InducedCopy
-public import Mathlib.Data.Nat.Choose.Sum
-public import Mathlib.Data.Set.Card
+public import Mathlib.Data.Fintype.Lattice
 
 /-!
 # Möbius inversion between copy counts and induced copy counts
 
 For a guest graph `G : SimpleGraph V` and a host graph `H : SimpleGraph W` with finite
 vertex types, this file establishes the standard summation identity expressing the copy
-count `H.copyCount G` as a sum over supergraphs of `G` (on the same vertex type `V`) of
-induced copy counts `H.embeddingCount G'`, together with its Möbius inverse expressing
+count `H.copyCount G` as a sum of induced copy counts `H.embeddingCount G'` over the graphs
+`G'` obtained from `G` by adding edges, together with its Möbius inverse expressing
 `H.embeddingCount G` as a signed sum of `H.copyCount G'`.
+
+Both sums are indexed by the sets `S` of non-edges of `G`, that is by the subsets of
+`Gᶜ.edgeFinset`, and the graph obtained by adding `S` to `G` is `G ⊔ fromEdgeSet S`.
 
 Following the convention from `Mathlib/Combinatorics/SimpleGraph/Copy.lean` and
 `Mathlib/Combinatorics/SimpleGraph/InducedCopy.lean`, counting operations are host-first
@@ -27,36 +30,31 @@ Following the convention from `Mathlib/Combinatorics/SimpleGraph/Copy.lean` and
 
 * `SimpleGraph.Copy.inducedShape` — for `f : Copy G H`, the supergraph of `G` on `V`
   recording the induced adjacency on the image, transported back via `f.toEmbedding`.
-* `SimpleGraph.Copy.fiberInducedShapeEquiv` — the per-fiber bijection between copies with a
-  prescribed induced shape and graph embeddings of that shape.
-* `SimpleGraph.Copy.equivSigmaEmbedding` — the load-bearing bijection
-  `Copy G H ≃ Σ G' ∈ Icc G ⊤, Embedding G'.val H`.
-* `SimpleGraph.iccEquivPowersetEdgeFinsetSdiff` — for `G ≤ K`, the equivalence
-  `Finset.Icc G K ≃ (K.edgeFinset \ G.edgeFinset).powerset` used to reduce the inner
-  alternating sum to `Finset.sum_powerset_neg_one_pow_card`.
+* `SimpleGraph.Copy.fiberInducedShapeEquiv` — the bijection between copies of `G` with a
+  prescribed induced shape `G'` and graph embeddings of `G'`.
+* `SimpleGraph.Copy.leInducedShapeEquiv` — the bijection between copies of `G` whose induced
+  shape contains `G'` and copies of `G'`.
 
 ## Main results
 
 * `SimpleGraph.copyCount_eq_sum_embeddingCount` — forward identity:
-  `H.copyCount G = ∑ G' ∈ Icc G ⊤, H.embeddingCount G'`.
+  `H.copyCount G = ∑ S ∈ Gᶜ.edgeFinset.powerset, H.embeddingCount (G ⊔ fromEdgeSet S)`.
 * `SimpleGraph.embeddingCount_eq_sum_signed_copyCount` — Möbius inverse over `ℤ`:
-  `(H.embeddingCount G : ℤ) = (-1) ^ Nat.card G.edgeSet *
-    ∑ G' ∈ Icc G ⊤, (-1) ^ Nat.card G'.edgeSet * (H.copyCount G' : ℤ)`.
+  `H.embeddingCount G = ∑ S ∈ Gᶜ.edgeFinset.powerset, (-1) ^ #S * H.copyCount (G ⊔ fromEdgeSet S)`.
 
 ## Implementation notes
 
-The forward bijection `Copy.equivSigmaEmbedding` is the only "real" content; the Möbius
-direction reduces to it via the classical alternating-sum identity
-`Finset.sum_powerset_neg_one_pow_card`, reindexed through the order-isomorphism
-`G' ∈ Icc G ⊤ ↔ S ⊆ E(⊤) \ E(G)`.
+Every copy `f` of `G` in `H` has an induced shape `f.inducedShape`, a supergraph of `G`, and `f`
+is a copy of `G'` iff `G' ≤ f.inducedShape` and an embedding of `G'` iff `G' = f.inducedShape`.
+The forward identity partitions the copies of `G` by the set of non-edges of `G` in their induced
+shape. The Möbius inverse is the inclusion-exclusion principle
+`Finset.inclusion_exclusion_card_inf_compl` applied to the sets of copies of `G` mapping a given
+non-edge of `G` to an edge of `H`.
+
+The sums range over sets of non-edges of `G` rather than over the supergraphs of `G`, so that
+the statements do not depend on the order structure of `SimpleGraph V`.
 
 The Möbius identity is stated in `ℤ` (rather than `ℕ`) because the signs are essential.
-The user-facing form uses `Nat.card G.edgeSet` rather than `#(G'.edgeFinset \ G.edgeFinset)`
-in the sign exponent: equivalent under `G ≤ G'` by parity, but `Nat.card` has no per-graph
-`Fintype` hypothesis, keeping the theorem signature free of `Classical`.
-
-The `LocallyFiniteOrder (SimpleGraph V)` instance consumed by `Finset.Icc G ⊤` comes from
-`SimpleGraph.Finite.instLocallyFiniteOrder`, which requires `[DecidableLE (SimpleGraph V)]`.
 -/
 
 public section
@@ -107,258 +105,116 @@ def fiberInducedShapeEquiv (hGG' : G ≤ G') :
   left_inv f := by apply Subtype.ext; ext v; simp
   right_inv e := by apply DFunLike.ext; intro v; simp
 
+/-- The copies of `G` in `H` whose induced shape contains a supergraph `G' ≥ G` are canonically
+the copies of `G'` in `H`. -/
+def leInducedShapeEquiv (hGG' : G ≤ G') :
+    {f : Copy G H // G' ≤ f.inducedShape} ≃ Copy G' H where
+  toFun f := ⟨⟨f.val, fun hab => f.val.inducedShape_adj.mp (f.prop hab)⟩, f.val.injective⟩
+  invFun f := ⟨f.comp (Copy.ofLE G G' hGG'), fun _ _ hab => by simpa using f.toHom.map_adj hab⟩
+  left_inv f := by apply Subtype.ext; ext v; simp
+  right_inv f := by ext v; simp
+
 end Copy
 
 @[simp] lemma Embedding.inducedShape_toCopy {G : SimpleGraph V} {H : SimpleGraph W}
     (e : Embedding G H) : e.toCopy.inducedShape = G := by
   ext a b; rw [Copy.inducedShape_adj]; exact e.map_rel_iff
 
-/-! ### Forward bijection and count identity -/
+/-! ### Adding non-edges to a graph
 
-section Forward
+Every supergraph `K` of `G` is `G ⊔ fromEdgeSet s` for a unique set `s` of non-edges of `G`,
+namely the set of edges of `K` that are not edges of `G`. -/
 
-variable {G : SimpleGraph V} {H : SimpleGraph W}
+section SupFromEdgeSet
 
-/-- The load-bearing equivalence: a copy of `G` in `H` is the same data as a choice of
-supergraph `G' ∈ Icc G ⊤` (the induced shape) together with a graph embedding
-`G' ↪g H`. This expresses every copy uniquely as an induced copy of some shape `G'`
-between `G` and the complete graph.
+variable {G K : SimpleGraph V} {s : Set (Sym2 V)}
 
-The proof goes via the canonical fiber decomposition `Equiv.sigmaFiberEquiv` for the map
-`Copy.inducedShape`. The index `K : SimpleGraph V` is restricted to `Icc G ⊤`, which is
-exactly the set of shapes with nonempty fiber. The per-fiber bijection is
-`Copy.fiberInducedShapeEquiv`. -/
-noncomputable def Copy.equivSigmaEmbedding (G : SimpleGraph V) (H : SimpleGraph W)
-    [Fintype V] [DecidableEq V] [DecidableLE (SimpleGraph V)] :
-    Copy G H ≃ Σ G' : ↥(Finset.Icc G ⊤), Embedding G'.val H :=
-  (Equiv.sigmaFiberEquiv (Copy.inducedShape : Copy G H → SimpleGraph V)).symm.trans <|
-  { toFun := fun ⟨K, f⟩ =>
-      let hGK : G ≤ K := f.prop ▸ f.val.le_inducedShape
-      ⟨⟨K, Finset.mem_Icc.mpr ⟨hGK, le_top⟩⟩,
-       Copy.fiberInducedShapeEquiv hGK f⟩
-    invFun := fun ⟨⟨K, hK⟩, e⟩ =>
-      ⟨K, (Copy.fiberInducedShapeEquiv (Finset.mem_Icc.mp hK).1).symm e⟩
-    left_inv := by
-      rintro ⟨K, f⟩
-      simp
-    right_inv := by
-      rintro ⟨⟨K, hK⟩, e⟩
-      simp only [Equiv.apply_symm_apply] }
+/-- A set of edges of a graph contains no diagonal element. -/
+private lemma sdiff_diagSet_of_subset_edgeSet (hs : s ⊆ K.edgeSet) : s \ Sym2.diagSet = s :=
+  sdiff_eq_left.2 <| Set.subset_compl_iff_disjoint_right.1 <|
+    hs.trans (edgeSet_subset_compl_diagSet K)
 
-/-- Forward identity: every copy of `G` in `H` is an induced copy of some unique
-supergraph `G' ∈ Icc G ⊤` of `G`. -/
-theorem copyCount_eq_sum_embeddingCount [Fintype V] [DecidableEq V]
-    [DecidableLE (SimpleGraph V)] [Finite W] (G : SimpleGraph V) (H : SimpleGraph W) :
-    H.copyCount G = ∑ G' ∈ Finset.Icc G ⊤, H.embeddingCount G' := by
-  rw [copyCount_eq_nat_card, Nat.card_congr (Copy.equivSigmaEmbedding G H), Nat.card_sigma,
-    ← Finset.sum_attach (Finset.Icc G ⊤) (fun G' => H.embeddingCount G')]
-  refine Finset.sum_congr rfl fun G' _ => ?_
-  exact (embeddingCount_eq_nat_card _ _).symm
+/-- Adding a set `s` of non-edges of `G` to `G` yields a subgraph of a supergraph `K` of `G` iff
+all elements of `s` are edges of `K`. -/
+lemma sup_fromEdgeSet_le_iff (hGK : G ≤ K) (hs : s ⊆ Gᶜ.edgeSet) :
+    G ⊔ fromEdgeSet s ≤ K ↔ s ⊆ K.edgeSet := by
+  rw [sup_le_iff, and_iff_right hGK, fromEdgeSet_le, sdiff_diagSet_of_subset_edgeSet hs]
 
-end Forward
+/-- A supergraph `K` of `G` is obtained by adding a set `s` of non-edges of `G` to `G` iff `s` is
+the set of edges of `K` that are not edges of `G`. -/
+lemma eq_sup_fromEdgeSet_iff (hGK : G ≤ K) (hs : s ⊆ Gᶜ.edgeSet) :
+    K = G ⊔ fromEdgeSet s ↔ K.edgeSet \ G.edgeSet = s := by
+  have hGs : Disjoint G.edgeSet s := (disjoint_edgeSet.2 disjoint_compl_right).mono_right hs
+  rw [← edgeSet_inj, edgeSet_sup, edgeSet_fromEdgeSet, sdiff_diagSet_of_subset_edgeSet hs]
+  refine ⟨fun h => ?_, ?_⟩
+  · rw [h]
+    exact hGs.sup_sdiff_cancel_left
+  · rintro rfl
+    exact (Set.union_sdiff_cancel (edgeSet_subset_edgeSet.2 hGK)).symm
 
-/-! ### Möbius (signed-sum) inverse
+end SupFromEdgeSet
 
-The Möbius inverse to the forward identity, expressing `H.embeddingCount G` as a signed
-sum of `H.copyCount G'` over supergraphs `G' ∈ Icc G ⊤`. The proof reduces, via the
-order-isomorphism `iccEquivPowersetEdgeFinsetSdiff` below, to the alternating-sum
-identity `Finset.sum_powerset_neg_one_pow_card`.
--/
+/-! ### Count identities -/
 
-section Mobius
+section Count
 
-variable [Fintype V] [DecidableEq V] [DecidableLE (SimpleGraph V)]
+variable [Finite V] [Finite W] (G : SimpleGraph V) (H : SimpleGraph W) [Fintype Gᶜ.edgeSet]
 
-/-! ### Finset of extra edges
+/-- Forward identity: every copy of `G` in `H` is an induced copy of exactly one of the graphs
+obtained from `G` by adding a set `S` of non-edges of `G`. -/
+theorem copyCount_eq_sum_embeddingCount :
+    H.copyCount G = ∑ S ∈ Gᶜ.edgeFinset.powerset, H.embeddingCount (G ⊔ fromEdgeSet ↑S) := by
+  classical
+  have := Fintype.ofFinite (Copy G H)
+  -- Partition the copies `f` of `G` by the set of non-edges of `G` in the induced shape of `f`.
+  have hmaps : Set.MapsTo
+      (fun f : Copy G H => (Set.toFinite (f.inducedShape.edgeSet \ G.edgeSet)).toFinset)
+      (univ : Finset (Copy G H)) Gᶜ.edgeFinset.powerset := fun f _ => by
+    rw [mem_coe, mem_powerset, Set.Finite.toFinset_subset, coe_edgeFinset, ← edgeSet_sdiff,
+      edgeSet_subset_edgeSet, sdiff_le_iff, sup_compl_eq_top]
+    exact le_top
+  rw [copyCount_eq_nat_card, Nat.card_eq_fintype_card, ← card_univ,
+    card_eq_sum_card_fiberwise hmaps]
+  refine sum_congr rfl fun S hS => ?_
+  have hS' : (S : Set (Sym2 V)) ⊆ Gᶜ.edgeSet := by
+    rw [← coe_edgeFinset, coe_subset]
+    exact mem_powerset.1 hS
+  rw [embeddingCount_eq_nat_card, ← Nat.card_congr (Copy.fiberInducedShapeEquiv le_sup_left)]
+  refine (Nat.subtype_card _ fun f => ?_).symm
+  rw [mem_filter_univ, ← coe_inj, Set.Finite.coe_toFinset,
+    eq_sup_fromEdgeSet_iff f.le_inducedShape hS']
 
-Helper construction giving the Finset of edges in `K` but not in `G`, without requiring a
-per-graph `Fintype` instance on the edge sets. Uses `Set.Finite.toFinset` (noncomputable). -/
-
-omit [Fintype V] [DecidableEq V] [DecidableLE (SimpleGraph V)] in
-/-- The set difference of edge sets on a finite vertex type is finite. -/
-lemma edgeSet_sdiff_finite [Finite V] (G K : SimpleGraph V) : (K.edgeSet \ G.edgeSet).Finite :=
-  Set.finite_univ.subset (Set.subset_univ _)
-
-/-- The Finset of edges in `K` but not in `G`. Constructed via `Set.Finite.toFinset`,
-so noncomputable, but requires no per-graph `Fintype` synthesis. -/
-noncomputable def edgeSetSdiffFinset (G K : SimpleGraph V) : Finset (Sym2 V) :=
-  (edgeSet_sdiff_finite G K).toFinset
-
-omit [DecidableEq V] [DecidableLE (SimpleGraph V)] in
-@[simp] lemma mem_edgeSetSdiffFinset {G K : SimpleGraph V} {e : Sym2 V} :
-    e ∈ edgeSetSdiffFinset G K ↔ e ∈ K.edgeSet ∧ e ∉ G.edgeSet :=
-  Set.Finite.mem_toFinset _
-
-omit [DecidableEq V] [DecidableLE (SimpleGraph V)] in
-/-- Under `G ≤ K`, `Nat.card K.edgeSet = Nat.card G.edgeSet + #(edgeSetSdiffFinset G K)`. -/
-lemma natCard_edgeSet_eq_add_card_sdiff {G K : SimpleGraph V} (hGK : G ≤ K) :
-    Nat.card K.edgeSet = Nat.card G.edgeSet + #(edgeSetSdiffFinset G K) := by
-  rw [Nat.card_coe_set_eq, Nat.card_coe_set_eq,
-      show #(edgeSetSdiffFinset G K) = (K.edgeSet \ G.edgeSet).ncard from
-        (Set.ncard_eq_toFinset_card _ (edgeSet_sdiff_finite G K)).symm,
-      add_comm]
-  exact (Set.ncard_sdiff_add_ncard_of_subset (edgeSet_subset_edgeSet.mpr hGK)).symm
-
-/-! ### Bijection between Icc and powerset of extra edges -/
-
-/-- Equivalence between the closed interval `Finset.Icc G K` of graphs and the powerset of
-the Finset of edges in `K` not in `G`, when `G ≤ K`.
-
-Forward: `G' ∈ [G, K]` maps to the Finset `edgeSetSdiffFinset G G'.val` (its extra edges
-over `G`, automatically a subset of `edgeSetSdiffFinset G K` since `G' ≤ K`).
-
-Inverse: a subset `S ⊆ edgeSetSdiffFinset G K` maps to `fromEdgeSet (G.edgeSet ∪ ↑S)`. -/
-noncomputable def iccEquivPowersetEdgeFinsetSdiff
-    {G K : SimpleGraph V} (hGK : G ≤ K) :
-    ↥(Finset.Icc G K) ≃ ↥(edgeSetSdiffFinset G K).powerset where
-  toFun G' :=
-    ⟨edgeSetSdiffFinset G G'.val, by
-      rw [Finset.mem_powerset]
-      intro e he
-      rw [mem_edgeSetSdiffFinset] at he ⊢
-      exact ⟨edgeSet_subset_edgeSet.mpr (Finset.mem_Icc.mp G'.prop).2 he.1, he.2⟩⟩
-  invFun S :=
-    ⟨fromEdgeSet (G.edgeSet ∪ ↑S.val), by
-      have hSK : ∀ e ∈ S.val, e ∈ K.edgeSet ∧ e ∉ G.edgeSet := fun e he => by
-        have := Finset.mem_powerset.mp S.prop he
-        rwa [mem_edgeSetSdiffFinset] at this
-      refine Finset.mem_Icc.mpr ⟨fun a b hab => ?_, ?_⟩
-      · exact (fromEdgeSet_adj _).mpr ⟨.inl hab, hab.ne⟩
-      · rw [fromEdgeSet_le]
-        rintro e ⟨heGS | heGS, _⟩
-        · exact edgeSet_subset_edgeSet.mpr hGK heGS
-        · exact (hSK e (Finset.mem_coe.mp heGS)).1⟩
-  left_inv := by
-    rintro ⟨G', hG'⟩
-    have hGG' : G ≤ G' := (Finset.mem_Icc.mp hG').1
-    apply Subtype.ext
-    ext a b
-    rw [fromEdgeSet_adj]
-    simp only [Set.mem_union, Finset.mem_coe, mem_edgeSetSdiffFinset]
-    refine ⟨fun ⟨h, _⟩ => h.elim (edgeSet_subset_edgeSet.mpr hGG' ·) (·.1),
-            fun h => ⟨?_, h.ne⟩⟩
-    by_cases hG : G.Adj a b
-    · exact .inl hG
-    · exact .inr ⟨h, hG⟩
-  right_inv := by
-    rintro ⟨S, hS⟩
-    have hSK : ∀ e ∈ S, e ∈ K.edgeSet ∧ e ∉ G.edgeSet := fun e he => by
-      have := Finset.mem_powerset.mp hS he
-      rwa [mem_edgeSetSdiffFinset] at this
-    apply Subtype.ext
-    apply Finset.ext
-    intro e
-    rw [mem_edgeSetSdiffFinset, edgeSet_fromEdgeSet, Set.mem_sdiff, Set.mem_union]
-    refine ⟨?_, fun heS => ?_⟩
-    · rintro ⟨⟨h | h, _⟩, heG⟩
-      · exact absurd h heG
-      · exact Finset.mem_coe.mp h
-    · have ⟨heK, heG⟩ := hSK e heS
-      exact ⟨⟨.inr (Finset.mem_coe.mpr heS), fun hd =>
-        K.not_isDiag_of_mem_edgeSet heK hd⟩, heG⟩
-
-/-! ### Combinatorial kernel
-
-Split into two pieces, avoiding `if-then-else` (which would require `DecidableEq` on
-`SimpleGraph V`). Consumers case-split on `G = L vs G < L` via `eq_or_lt_of_le`. -/
-
-/-- Degenerate case: the alternating sum over a singleton interval. -/
-lemma sum_Icc_self_neg_one_pow_natCard_edgeSet (G : SimpleGraph V) :
-    ∑ K' ∈ Finset.Icc G G, (-1 : ℤ) ^ Nat.card K'.edgeSet
-      = (-1 : ℤ) ^ Nat.card G.edgeSet := by
-  rw [Finset.Icc_self, Finset.sum_singleton]
-
-/-- Strictly-larger case: the alternating sum over `Icc G L` with `G < L` is zero.
-Reindexes via `iccEquivPowersetEdgeFinsetSdiff`, factors out the `(-1)^Nat.card G.edgeSet`
-constant via the cardinality bridge, then collapses via `Finset.sum_powerset_neg_one_pow_card`
-(which is zero on a non-empty powerset). -/
-lemma sum_Icc_neg_one_pow_natCard_edgeSet_of_lt
-    {G L : SimpleGraph V} (hGL : G < L) :
-    ∑ K' ∈ Finset.Icc G L, (-1 : ℤ) ^ Nat.card K'.edgeSet = 0 := by
-  have hGL' : G ≤ L := hGL.le
-  -- Reindex the sum via `iccEquiv` and factor out `(-1)^Nat.card G.edgeSet`.
-  have key : ∑ K' ∈ Finset.Icc G L, (-1 : ℤ) ^ Nat.card K'.edgeSet
-      = (-1 : ℤ) ^ Nat.card G.edgeSet *
-          ∑ S ∈ (edgeSetSdiffFinset G L).powerset, (-1 : ℤ) ^ #S := by
-    rw [Finset.mul_sum,
-        ← Finset.sum_attach (Finset.Icc G L)
-          (fun K' => (-1 : ℤ) ^ Nat.card K'.edgeSet),
-        ← Finset.sum_attach (edgeSetSdiffFinset G L).powerset
-          (fun S => (-1 : ℤ) ^ Nat.card G.edgeSet * (-1 : ℤ) ^ #S)]
-    refine Finset.sum_equiv (iccEquivPowersetEdgeFinsetSdiff hGL')
-      (fun _ => by simp) ?_
-    intro K' _
-    have hGK' : G ≤ K'.val := (Finset.mem_Icc.mp K'.prop).1
-    rw [natCard_edgeSet_eq_add_card_sdiff hGK', pow_add]
-    rfl
-  rw [key, Finset.sum_powerset_neg_one_pow_card, if_neg, mul_zero]
-  -- Remaining goal: `edgeSetSdiffFinset G L ≠ ∅`, which would imply `L ≤ G`.
-  intro hempty
-  have hLsubG : L.edgeSet ⊆ G.edgeSet :=
-    Set.sdiff_eq_empty.mp ((edgeSet_sdiff_finite G L).toFinset_eq_empty.mp hempty)
-  exact absurd (le_antisymm (edgeSet_subset_edgeSet.mp hLsubG) hGL') hGL.ne'
-
-/-! ### Main Möbius identity -/
-
-/-- The Möbius (signed-sum) inverse to `copyCount_eq_sum_embeddingCount`. The induced copy
-count is expressed as a signed sum of copy counts over supergraphs `G' ∈ Icc G ⊤`, with the
-sign factored as `(-1)^Nat.card G.edgeSet * (-1)^Nat.card G'.edgeSet`.
-
-The `Nat.card` form keeps the signature free of per-graph `Fintype` synthesis on edge sets
-(and hence free of `Classical`). -/
-theorem embeddingCount_eq_sum_signed_copyCount [Finite W]
-    (G : SimpleGraph V) (H : SimpleGraph W) :
+/-- The Möbius (signed-sum) inverse to `copyCount_eq_sum_embeddingCount`: the induced copy count
+of `G` is the alternating sum of the copy counts of the graphs obtained from `G` by adding a set
+`S` of non-edges of `G`. -/
+theorem embeddingCount_eq_sum_signed_copyCount :
     (H.embeddingCount G : ℤ) =
-      (-1 : ℤ) ^ Nat.card G.edgeSet *
-        ∑ G' ∈ Finset.Icc G ⊤,
-          (-1 : ℤ) ^ Nat.card G'.edgeSet * (H.copyCount G' : ℤ) := by
-  symm
-  calc (-1 : ℤ) ^ Nat.card G.edgeSet *
-          ∑ G' ∈ Finset.Icc G ⊤,
-            (-1 : ℤ) ^ Nat.card G'.edgeSet * (H.copyCount G' : ℤ)
-      -- Substitute the forward identity into each `copyCount G'`.
-      = (-1 : ℤ) ^ Nat.card G.edgeSet *
-          ∑ G' ∈ Finset.Icc G ⊤, ∑ L ∈ Finset.Icc G' ⊤,
-            (-1 : ℤ) ^ Nat.card G'.edgeSet * (H.embeddingCount L : ℤ) := by
-        simp_rw [copyCount_eq_sum_embeddingCount, Nat.cast_sum, Finset.mul_sum]
-      -- Distribute `(-1)^Nat.card G.edgeSet` into the double sum.
-    _ = ∑ G' ∈ Finset.Icc G ⊤, ∑ L ∈ Finset.Icc G' ⊤,
-            (-1 : ℤ) ^ Nat.card G.edgeSet *
-              ((-1 : ℤ) ^ Nat.card G'.edgeSet * (H.embeddingCount L : ℤ)) := by
-        rw [Finset.mul_sum]
-        refine Finset.sum_congr rfl fun G' _ => ?_
-        rw [Finset.mul_sum]
-      -- Swap the order of summation over the triangle `G ≤ G' ≤ L ≤ ⊤`.
-    _ = ∑ L ∈ Finset.Icc G ⊤, ∑ G' ∈ Finset.Icc G L,
-            (-1 : ℤ) ^ Nat.card G.edgeSet *
-              ((-1 : ℤ) ^ Nat.card G'.edgeSet * (H.embeddingCount L : ℤ)) := by
-        rw [Finset.sum_comm' (s := Finset.Icc G (⊤ : SimpleGraph V))
-            (t := fun G' => Finset.Icc G' ⊤)
-            (s' := fun L => Finset.Icc G L) (t' := Finset.Icc G (⊤ : SimpleGraph V))
-            (h := fun G' L => by
-              simp only [Finset.mem_Icc]
-              exact ⟨fun ⟨⟨hGG', _⟩, hG'L, _⟩ => ⟨⟨hGG', hG'L⟩, hGG'.trans hG'L, le_top⟩,
-                     fun ⟨⟨hGG', hG'L⟩, _⟩ => ⟨⟨hGG', le_top⟩, hG'L, le_top⟩⟩)]
-      -- Factor `H.embeddingCount L` out of each inner sum.
-    _ = ∑ L ∈ Finset.Icc G ⊤, (H.embeddingCount L : ℤ) *
-          ((-1 : ℤ) ^ Nat.card G.edgeSet *
-            ∑ G' ∈ Finset.Icc G L, (-1 : ℤ) ^ Nat.card G'.edgeSet) := by
-        refine Finset.sum_congr rfl fun L _ => ?_
-        rw [Finset.mul_sum, Finset.mul_sum]
-        refine Finset.sum_congr rfl fun G' _ => ?_
-        ring
-      -- Isolate the `L = G` term: all others vanish via the strict-`G < L` kernel.
-    _ = (H.embeddingCount G : ℤ) := by
-        rw [Finset.sum_eq_single G]
-        · rw [sum_Icc_self_neg_one_pow_natCard_edgeSet, ← pow_add,
-              Even.neg_one_pow ⟨_, rfl⟩, mul_one]
-        · intro L hL hLG
-          rcases eq_or_lt_of_le (Finset.mem_Icc.mp hL).1 with rfl | hGL
-          · exact absurd rfl hLG
-          · rw [sum_Icc_neg_one_pow_natCard_edgeSet_of_lt hGL, mul_zero, mul_zero]
-        · intro hG
-          exact absurd (Finset.mem_Icc.mpr ⟨le_refl _, le_top⟩) hG
+      ∑ S ∈ Gᶜ.edgeFinset.powerset, (-1 : ℤ) ^ #S * (H.copyCount (G ⊔ fromEdgeSet ↑S) : ℤ) := by
+  classical
+  have := Fintype.ofFinite (Copy G H)
+  -- `A e` is the set of copies of `G` in `H` mapping the non-edge `e` of `G` to an edge of `H`.
+  let A (e : Sym2 V) : Finset (Copy G H) := {f | e ∈ f.inducedShape.edgeSet}
+  -- The embeddings of `G` are the copies of `G` lying in no `A e`.
+  have hemb : H.embeddingCount G = #(Gᶜ.edgeFinset.inf fun e => (A e)ᶜ) := by
+    rw [embeddingCount_eq_nat_card, ← Nat.card_congr (Copy.fiberInducedShapeEquiv le_rfl)]
+    refine Nat.subtype_card _ fun f => ?_
+    simp only [A, mem_inf, mem_compl, mem_filter_univ, mem_edgeFinset]
+    rw [← Set.disjoint_right, disjoint_edgeSet, disjoint_compl_right_iff,
+      f.le_inducedShape.ge_iff_eq, eq_comm]
+  -- The copies of `G ⊔ fromEdgeSet S` are the copies of `G` lying in `A e` for all `e ∈ S`.
+  have hcopy (S : Finset (Sym2 V)) (hS : S ∈ Gᶜ.edgeFinset.powerset) :
+      H.copyCount (G ⊔ fromEdgeSet ↑S) = #(S.inf A) := by
+    have hS' : (S : Set (Sym2 V)) ⊆ Gᶜ.edgeSet := by
+      rw [← coe_edgeFinset, coe_subset]
+      exact mem_powerset.1 hS
+    rw [copyCount_eq_nat_card, ← Nat.card_congr (Copy.leInducedShapeEquiv le_sup_left)]
+    refine Nat.subtype_card _ fun f => ?_
+    simp only [A, mem_inf, mem_filter_univ]
+    rw [sup_fromEdgeSet_le_iff f.le_inducedShape hS']
+    rfl
+  rw [hemb, inclusion_exclusion_card_inf_compl]
+  exact sum_congr rfl fun S hS => by rw [hcopy S hS]
 
-end Mobius
+end Count
 
 end SimpleGraph
